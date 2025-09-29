@@ -853,7 +853,7 @@ Again, please use the file CLAUDE.md to keep track of anything you need to know 
 
 Be thorough and concise: do not waste tokens. However, do not ignore things. Use your extra thining capabilities to keep yourself straight. Do not simplify, or "cop out" -- EVER. If you find yourself saying "Let me take a simpler approach".. you are PROBABLY just 'skipping past' an error that you could probably fix and debug, given some more iteration. Feel free to try, and to "learn" (by using the scratchpad below), so you don't end up repeating the same mistakes after the compaction cycles. I can also help by asking our 'reasoning expert' questions, if we need. You are also encouraged to use Web Search whenever necessary to retrieve the most up-to-date information, and you should then document findings below so we don't ever need to repeat such calls.
 
-If you find you have not met full coverage -- do not stop. Do not waste time writing 'final summaries' when you *KNOW* there are things left to do. You can use CLAUDE.md for that kind of thing -- keeping track of what we've done, what worked, what didn't -- etc.
+If you find you have not met full coverage -- do not stop. Do not waste time writing 'final summaries' when you *KNOW* there are things left to do. You can use CLAUDE.md for that kind of thing -- keeping track of what we've done, what worked, what didn't -- etc. If you can improve coverage and mutation scores *above* thresholds -- that is great too! Ideally 100% coverage and robustness would be fantastic. There is usually more left to do: if you do need to come up for air, to report to me, or ask questions -- please do mention what is left to be done.
 
 
 
