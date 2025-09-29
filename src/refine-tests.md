@@ -15,8 +15,9 @@ An intelligent, multi-phase workflow for systematically improving test suite qua
 Before doing ANYTHING else, check the size:
 ```bash
 # Count lines of actual code (not tests)
-LOC=$(find . -type f \( -name "*.py" -o -name "*.js" -o -name "*.ts" -o -name "*.java" \) ! -path "*/test*" ! -path "*/__pycache__/*" ! -path "*/node_modules/*" | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}')
+find . -type f -name "*.py" ! -path "*/test*" ! -path "*/__pycache__/*" | xargs wc -l 2>/dev/null | tail -1
 ```
+You may also include *.java, *.cpp, etc. -- anything appropriate.
 
 ### Decision Matrix
 
