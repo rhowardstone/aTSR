@@ -15,7 +15,7 @@ You may then navigate to your repository of choice, or choose from our three exa
 
 ```bash
 bash src/setup_test_repos.sh examples
-cd examples/
+cd examples/repos_reduced/; ls
 ```
 
 Once you've navigated to the repo, you may run ```claude```, then ```/refine-tests auto```.
