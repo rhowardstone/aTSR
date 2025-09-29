@@ -142,6 +142,10 @@ create_reduced_version() {
     cp -r "$source_path" "$target_path"
     cd "$target_path"
 
+    # Remove git history to prevent seeing deleted files
+    echo "  Removing git history..."
+    rm -rf .git
+
     # Clean function to remove test references
     clean_test_references() {
         local removed_file=$1
@@ -316,5 +320,6 @@ echo ""
 echo -e "${GREEN}Next steps:${NC}"
 echo "1. cd $REDUCED_DIR/<repo_name>"
 echo "2. Run: claude"
-echo "3. Execute: /refine-tests-v2 auto"
+echo "3. Execute: /refine-tests auto"
 echo ""
+echo "Note: Reduced repos have no git history to prevent seeing deleted test files."
