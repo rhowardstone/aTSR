@@ -15,9 +15,8 @@ An intelligent, multi-phase workflow for systematically improving test suite qua
 Before doing ANYTHING else, check the size:
 ```bash
 # Count lines of actual code (not tests)
-find . -type f -name "*.py" ! -path "*/test*" ! -path "*/__pycache__/*" | xargs wc -l 2>/dev/null | tail -1
+LOC=$(find . -type f \( -name "*.py" -o -name "*.js" -o -name "*.ts" -o -name "*.java" \) ! -path "*/test*" ! -path "*/__pycache__/*" ! -path "*/node_modules/*" | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}')
 ```
-You may also include *.java, *.cpp, etc. -- anything appropriate.
 
 ### Decision Matrix
 
@@ -839,4 +838,23 @@ Remember: The goal isn't 100% coverage or killing all mutants. It's building con
 - **Would it be faster to write tests than set up tools?** Then write the tests.
 - **Is the entire codebase visible in one screen?** You probably don't need mutation testing.
 
-The expert knows when NOT to use their tools as much as when to use them. 
+The expert knows when NOT to use their tools as much as when to use them. Additionally, real experts do not give false reports of completion if things are not complete. They do not give up on hundreds of lines of code they've written if they experience a difficult bug, simplifying problems so much that they are no longer useful tidbits of problem, but rather meaningless checks so we feel like we did something.
+
+
+Please proceed in an orderly fashion, making a FULL plan in your todos (with appropriate subtasks), and always using the best available tool for the job at hand. 
+
+Do not leave ANYTHING out -- NO placeholder code! No dead functions! This may take several compaction windows -- that is fine. We have time. Stay organized using your todo list, and always be sure to write to CLAUDE.md to update your summaries and status indicators.
+
+Don't call anything "final" -- everything is an ongoing process! Be organized in your attempt(s) and filename(s). Feel free to run things like: bash( ls -la ) or bash( tree . ) or bash( pwd ) even, to keep yourself straight. Keep everything in subdirectories, appropriately named, following the conventions laid out in the repo you are working on. Be sure you are not doing redundant things, by checking first to see if they've been done (reading back through CLAUDE.md, for example.) You can keep your log in CLAUDE.md organized in order to facilitate easy digestion later. Prompt as you would want to be prompted ;).
+
+Be sure to debug your attempts and keep your goals in mind: do not "fall back" to "simpler" methods when the going gets rough! That phrase is a red flag to me: when I see an agent doing this, I am immediately suspicious that they are "giving up," when in fact some thorough reflection -- taking a breath and thinking it through with fresh eyes after a good night's sleep -- *could* get us to the finishing line!
+
+Again, please use the file CLAUDE.md to keep track of anything you need to know (quirks, bugs that show up, how you fixed them, where the files are, what the functions are called, specific things we MUST do when working on particular functions or what have you, etc. -- anything that, if we suddenly lost our context except this document, that you would *absolutely* need [or even, really *like*] to know.). You will be shown that file after each compaction cycle, so it can be your 'memory'.
+
+Be thorough and concise: do not waste tokens. However, do not ignore things. Use your extra thining capabilities to keep yourself straight. Do not simplify, or "cop out" -- EVER. If you find yourself saying "Let me take a simpler approach".. you are PROBABLY just 'skipping past' an error that you could probably fix and debug, given some more iteration. Feel free to try, and to "learn" (by using the scratchpad below), so you don't end up repeating the same mistakes after the compaction cycles. I can also help by asking our 'reasoning expert' questions, if we need. You are also encouraged to use Web Search whenever necessary to retrieve the most up-to-date information, and you should then document findings below so we don't ever need to repeat such calls.
+
+If you find you have not met full coverage -- do not stop. Do not waste time writing 'final summaries' when you *KNOW* there are things left to do. You can use CLAUDE.md for that kind of thing -- keeping track of what we've done, what worked, what didn't -- etc.
+
+
+
+

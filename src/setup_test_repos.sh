@@ -142,15 +142,6 @@ create_reduced_version() {
     cp -r "$source_path" "$target_path"
     cd "$target_path"
 
-    # Remove git directory to start fresh (no history of deleted files)
-    rm -rf .git
-    # Reinitialize as a new repo so git status is clean
-    git init --quiet
-    git config user.name "Test Setup Script" 2>/dev/null
-    git config user.email "test@example.com" 2>/dev/null
-    git add . >/dev/null 2>&1
-    git commit -m "Initial commit with full test suite" --quiet
-
     # Clean function to remove test references
     clean_test_references() {
         local removed_file=$1
@@ -261,12 +252,6 @@ with open('test_schedule.py', 'w') as f:
             module_name="."
         fi
     fi
-
-    # Commit the changes after removing tests so git status is clean
-    git add -A >/dev/null 2>&1
-    git commit -m "Reduced test suite to ~50% coverage" --quiet 2>/dev/null || {
-        echo "No changes to commit (no tests removed)"
-    }
 
     # Run coverage on reduced version
     echo "Analyzing reduced coverage..."
