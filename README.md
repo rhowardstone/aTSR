@@ -25,6 +25,7 @@ If you are trying to recreate our results, you will want to first run:
 ```bash
 for n in 1 2 3; do
   bash src/create_benchmark.sh examples/repos_reduced/ bench/bench$n/
+  bash src/run_benchmark.sh bench/bench$n/
 done
 ```
 
