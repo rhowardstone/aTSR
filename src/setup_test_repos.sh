@@ -2,9 +2,20 @@
 
 # Reproducible test repository setup script
 # Creates original and reduced-test versions of popular Python repos
+# WITH PINNED VERSIONS FOR REPRODUCIBILITY
 
 set -e  # Exit on error
 set -o pipefail  # Pipe failures cause script to exit
+
+# PINNED VERSIONS FOR REPRODUCIBILITY
+# These are the LATEST releases as of September 30, 2025
+# This captures what you'd get TODAY, but frozen for reproducibility
+MISTUNE_TAG="v3.1.4"       # Latest release: Aug 29, 2025
+MISTUNE_COMMIT="b6d83e82"  # Corresponds to v3.1.4 tag
+SCHEDULE_TAG="1.2.2"        # Latest release: Oct 22, 2023 (still current)
+SCHEDULE_COMMIT="073dbc6"   # Corresponds to 1.2.2 tag
+CLICK_TAG="8.3.0"           # Latest release: Sep 18, 2025
+CLICK_COMMIT="00fadb8"     # Corresponds to 8.3.0 tag
 
 # Check if output directory argument is provided
 if [ $# -eq 0 ]; then
@@ -14,6 +25,11 @@ if [ $# -eq 0 ]; then
     echo "This will create:"
     echo "  <output_directory>/repos/        - Original repositories"
     echo "  <output_directory>/repos_reduced/ - Reduced test versions"
+    echo ""
+    echo "Using pinned versions for reproducibility (latest as of Sep 30, 2025):"
+    echo "  - mistune: $MISTUNE_TAG (commit: $MISTUNE_COMMIT)"
+    echo "  - schedule: $SCHEDULE_TAG (commit: $SCHEDULE_COMMIT)" 
+    echo "  - click: $CLICK_TAG (commit: $CLICK_COMMIT)"
     exit 1
 fi
 
@@ -34,10 +50,14 @@ REDUCED_DIR="$OUTPUT_DIR/repos_reduced"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}=== Test Repository Setup Script ===${NC}"
-echo "This script will clone 3 popular Python repos and create test-reduced versions"
+echo -e "${BLUE}Using reproducible pinned versions (latest as of Sep 30, 2025):${NC}"
+echo "  mistune: $MISTUNE_TAG (Aug 29, 2025)"
+echo "  schedule: $SCHEDULE_TAG (Oct 22, 2023 - still latest)"
+echo "  click: $CLICK_TAG (Sep 18, 2025)"
 echo ""
 
 # Clean up any existing directories
@@ -72,7 +92,34 @@ pip install -q pytest pytest-cov coverage 2>/dev/null || {
     echo -e "${RED}Warning: Some packages may already be installed${NC}"
 }
 
-# Function to analyze repository
+# Function to clone and checkout specific version
+clone_and_checkout() {
+    local repo_url=$1
+    local repo_name=$2
+    local tag=$3
+    local commit=$4
+    
+    echo -e "${BLUE}Cloning $repo_name and checking out $tag...${NC}"
+    git clone "$repo_url" --quiet
+    cd "$repo_name"
+    
+    # Try to checkout by tag first, fall back to commit if tag doesn't exist
+    if git rev-parse "$tag" >/dev/null 2>&1; then
+        git checkout "$tag" --quiet 2>/dev/null
+        echo "  Checked out tag: $tag"
+    else
+        git checkout "$commit" --quiet 2>/dev/null
+        echo "  Checked out commit: $commit"
+    fi
+    
+    # Verify we're at the expected commit
+    local current_commit=$(git rev-parse --short HEAD)
+    echo "  Current commit: $current_commit"
+    
+    cd ..
+}
+
+# Function to analyze repository (unchanged from original)
 analyze_repo() {
     local repo_name=$1
     local repo_path=$2
@@ -89,7 +136,6 @@ analyze_repo() {
                 echo -e "${YELLOW}Warning: Failed to install $repo_name dependencies${NC}"
             }
         }
-
     fi
 
     # Find test directory/files
@@ -129,7 +175,7 @@ analyze_repo() {
     cd "$OUTPUT_DIR"
 }
 
-# Function to create reduced test version
+# Function to create reduced test version (unchanged from original)
 create_reduced_version() {
     local repo_name=$1
     local source_path=$2
@@ -269,30 +315,37 @@ with open('test_schedule.py', 'w') as f:
 echo ""
 echo -e "${GREEN}=== Repository 1: mistune (Markdown parser) ===${NC}"
 echo "Size: ~2600 LOC, Testing: pytest"
+echo "Version: $MISTUNE_TAG (Latest release)"
 cd "$REPOS_DIR"
-git clone https://github.com/lepture/mistune.git --quiet
+clone_and_checkout "https://github.com/lepture/mistune.git" "mistune" "$MISTUNE_TAG" "$MISTUNE_COMMIT"
 analyze_repo "mistune" "$REPOS_DIR/mistune" "mistune"
 create_reduced_version "mistune" "$REPOS_DIR/mistune" "$REDUCED_DIR/mistune" "mistune"
 
 echo ""
 echo -e "${GREEN}=== Repository 2: schedule (Job scheduling) ===${NC}"
 echo "Size: ~400 LOC, Testing: pytest"
+echo "Version: $SCHEDULE_TAG (Latest release)"
 cd "$REPOS_DIR"
-git clone https://github.com/dbader/schedule.git --quiet
+clone_and_checkout "https://github.com/dbader/schedule.git" "schedule" "$SCHEDULE_TAG" "$SCHEDULE_COMMIT"
 analyze_repo "schedule" "$REPOS_DIR/schedule" "schedule"
 create_reduced_version "schedule" "$REPOS_DIR/schedule" "$REDUCED_DIR/schedule" "schedule"
 
 echo ""
 echo -e "${GREEN}=== Repository 3: click (CLI framework) ===${NC}"
 echo "Size: ~8000 LOC, Testing: pytest"
+echo "Version: $CLICK_TAG (Latest release)"
 cd "$REPOS_DIR"
-git clone https://github.com/pallets/click.git --quiet
+clone_and_checkout "https://github.com/pallets/click.git" "click" "$CLICK_TAG" "$CLICK_COMMIT"
 analyze_repo "click" "$REPOS_DIR/click" "click"
 create_reduced_version "click" "$REPOS_DIR/click" "$REDUCED_DIR/click" "click"
 
-
 echo ""
 echo -e "${GREEN}=== Setup Complete ===${NC}"
+echo ""
+echo -e "${BLUE}Reproducible versions used (latest as of Sep 30, 2025):${NC}"
+echo "  mistune: $MISTUNE_TAG (commit: $MISTUNE_COMMIT)"
+echo "  schedule: $SCHEDULE_TAG (commit: $SCHEDULE_COMMIT)"
+echo "  click: $CLICK_TAG (commit: $CLICK_COMMIT)"
 echo ""
 echo "Repository structure:"
 echo "  Original repos: $REPOS_DIR/"
@@ -322,4 +375,6 @@ echo "1. cd $REDUCED_DIR/<repo_name>"
 echo "2. Run: claude"
 echo "3. Execute: /refine-tests auto"
 echo ""
-echo "Note: Reduced repos have no git history to prevent seeing deleted test files."
+echo "Note: These versions are the latest releases as of Sep 30, 2025,"
+echo "      frozen for reproducibility. Anyone running this script will"
+echo "      get exactly these versions."
