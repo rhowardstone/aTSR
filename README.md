@@ -31,3 +31,12 @@ done
 
 to create the three repeats on each of our four test configurations (base,refinement x sonnet,opus)
 
+
+Then you may run:
+```bash
+bash src/evaluate_all.sh bench/ --output-dir evaluation_results --verbose
+python src/Create_visualization.py evaluation_testing/evaluation_20251001_085526/summary.json evaluation_testing/evaluation_20251001_085526/summary-plot.png
+```
+
+
+To view the results.
