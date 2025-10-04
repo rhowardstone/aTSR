@@ -1,0 +1,11 @@
+{
+  "file": "/atb-data/rye/.claude/projects/-atb-data-5095-project-cloned-aTSR-bench-bench1-results-20250930-165335-click-opus-4-1-base-workspace/e25745db-f94e-41cf-8f8a-245427a3dc2d.jsonl",
+  "message_count": 161,
+  "tokens": {
+    "total": 10623552,
+    "input": 226,
+    "output": 774,
+    "cache_creation": 195023,
+    "cache_read": 10427529
+  }
+}

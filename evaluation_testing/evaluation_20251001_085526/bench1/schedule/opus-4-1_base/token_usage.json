@@ -1,0 +1,11 @@
+{
+  "file": "/atb-data/rye/.claude/projects/-atb-data-5095-project-cloned-aTSR-bench-bench1-results-20250930-165335-schedule-opus-4-1-base-workspace/152bceb5-af32-43a6-8a39-055eb756f24a.jsonl",
+  "message_count": 64,
+  "tokens": {
+    "total": 3193637,
+    "input": 214,
+    "output": 822,
+    "cache_creation": 113119,
+    "cache_read": 3079482
+  }
+}

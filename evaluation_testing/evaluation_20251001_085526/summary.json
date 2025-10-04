@@ -1,0 +1,130 @@
+{
+  "timestamp": "2025-10-01T12:55:26Z",
+  "benchmarks": [
+    {
+      "name": "bench1",
+      "results_dir": "/atb-data/5095_project/cloned/aTSR/bench/bench1/results_20250930_165335",
+      "configurations": [
+        {
+          "repository": "schedule",
+          "model": "sonnet-4-5",
+          "strategy": "refine",
+          "coverage": 85,
+          "pass_rate": 72.5,
+          "tests_added": 216,
+          "tokens": 4928462
+        }
+,
+        {
+          "repository": "schedule",
+          "model": "sonnet-4-5",
+          "strategy": "base",
+          "coverage": 88,
+          "pass_rate": 100.0,
+          "tests_added": 76,
+          "tokens": 2935729
+        }
+,
+        {
+          "repository": "schedule",
+          "model": "opus-4-1",
+          "strategy": "refine",
+          "coverage": 90,
+          "pass_rate": 96.8,
+          "tests_added": 212,
+          "tokens": 5974396
+        }
+,
+        {
+          "repository": "schedule",
+          "model": "opus-4-1",
+          "strategy": "base",
+          "coverage": 91,
+          "pass_rate": 100.0,
+          "tests_added": 94,
+          "tokens": 3193637
+        }
+,
+        {
+          "repository": "mistune",
+          "model": "sonnet-4-5",
+          "strategy": "refine",
+          "coverage": 72,
+          "pass_rate": 85.0,
+          "tests_added": 258,
+          "tokens": 5555247
+        }
+,
+        {
+          "repository": "mistune",
+          "model": "sonnet-4-5",
+          "strategy": "base",
+          "coverage": 79,
+          "pass_rate": 94.6,
+          "tests_added": 194,
+          "tokens": 5953604
+        }
+,
+        {
+          "repository": "mistune",
+          "model": "opus-4-1",
+          "strategy": "refine",
+          "coverage": 71,
+          "pass_rate": 97.7,
+          "tests_added": 300,
+          "tokens": 7927364
+        }
+,
+        {
+          "repository": "mistune",
+          "model": "opus-4-1",
+          "strategy": "base",
+          "coverage": 76,
+          "pass_rate": 94.3,
+          "tests_added": 376,
+          "tokens": 4211856
+        }
+,
+        {
+          "repository": "click",
+          "model": "sonnet-4-5",
+          "strategy": "refine",
+          "coverage": 64,
+          "pass_rate": 91.4,
+          "tests_added": 334,
+          "tokens": 8178035
+        }
+,
+        {
+          "repository": "click",
+          "model": "sonnet-4-5",
+          "strategy": "base",
+          "coverage": 64,
+          "pass_rate": 100.0,
+          "tests_added": 234,
+          "tokens": 2374981
+        }
+,
+        {
+          "repository": "click",
+          "model": "opus-4-1",
+          "strategy": "refine",
+          "coverage": 66,
+          "pass_rate": 95.5,
+          "tests_added": 298,
+          "tokens": 3260450
+        }
+,
+        {
+          "repository": "click",
+          "model": "opus-4-1",
+          "strategy": "base",
+          "coverage": 67,
+          "pass_rate": 91.9,
+          "tests_added": 212,
+          "tokens": 10623552
+        }
+      ]
+    }
+  ]
+}

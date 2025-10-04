@@ -1,0 +1,11 @@
+{
+  "file": "/atb-data/rye/.claude/projects/-atb-data-5095-project-cloned-aTSR-bench-bench1-results-20250930-165335-click-sonnet-4-5-base-workspace/4eb5e27f-6609-405f-bf75-25993b930d5d.jsonl",
+  "message_count": 47,
+  "tokens": {
+    "total": 2374981,
+    "input": 255,
+    "output": 1192,
+    "cache_creation": 167502,
+    "cache_read": 2206032
+  }
+}

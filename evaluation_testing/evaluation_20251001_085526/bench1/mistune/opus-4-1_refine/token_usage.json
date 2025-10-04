@@ -1,0 +1,11 @@
+{
+  "file": "/atb-data/rye/.claude/projects/-atb-data-5095-project-cloned-aTSR-bench-bench1-results-20250930-165335-mistune-opus-4-1-refine-workspace/5f28171b-2440-4da7-b2da-69dd4d0db42b.jsonl",
+  "message_count": 109,
+  "tokens": {
+    "total": 7927364,
+    "input": 202,
+    "output": 3354,
+    "cache_creation": 189093,
+    "cache_read": 7734715
+  }
+}

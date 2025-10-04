@@ -1,0 +1,27 @@
+{
+  "repository": "schedule",
+  "test_directory": "/atb-data/5095_project/cloned/aTSR/bench/bench1/results_20250930_165335/schedule/sonnet-4-5_refine/workspace",
+  "timestamp": "2025-10-01T12:55:50Z",
+  "metrics": {
+    "test_functions": 222,
+    "test_lines": 3182,
+    "tests_passed": 74,
+    "tests_failed": 28,
+    "pass_rate": 72.5,
+    "line_coverage": 85,
+    "branch_coverage": 0,
+    "mutation_score": 0
+  }
+,
+  "baseline": {
+    "directory": "/atb-data/5095_project/cloned/aTSR/bench/bench1/test_sonnet-4-5_refine/schedule",
+    "test_functions": 6,
+    "test_lines": 484,
+    "coverage": 56
+  },
+  "improvements": {
+    "functions_added": 216,
+    "lines_added": 2698,
+    "coverage_increase": 29
+  }
+}

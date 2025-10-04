@@ -1,0 +1,42 @@
+[0;34m═══════════════════════════════════════════[0m
+[0;34m    Test Metrics Evaluation[0m
+[0;34m═══════════════════════════════════════════[0m
+
+Repository: schedule
+Test directory: /atb-data/5095_project/cloned/aTSR/bench/bench1/results_20250930_165335/schedule/opus-4-1_refine/workspace
+Baseline directory: /atb-data/5095_project/cloned/aTSR/bench/bench1/test_opus-4-1_refine/schedule
+Output file: /atb-data/5095_project/cloned/aTSR/evaluation_testing3/evaluation_20251001_085526/bench1/schedule/opus-4-1_refine/metrics.json
+
+[0;36mCounting tests...[0m
+  Test functions: 380
+  Test lines: 5762
+
+[0;36mComparing to baseline...[0m
+  Baseline functions: 168
+  Baseline lines: 3258
+[0;32m  Functions added: +212[0m
+[0;32m  Lines added: +2504[0m
+  Function increase: 126.1%
+
+[0;36mRunning tests...[0m
+  Tests passed: 121/125
+  Pass rate: 96.8%
+
+[0;36mMeasuring coverage...[0m
+  Running coverage for schedule package...
+  Line coverage: 90%
+
+[0;36mMeasuring baseline coverage...[0m
+  Baseline coverage: 96%
+[0;33m  Coverage change: -6%[0m
+
+[0;36mGenerating metrics report...[0m
+[0;32m✓ Metrics saved to: /atb-data/5095_project/cloned/aTSR/evaluation_testing3/evaluation_20251001_085526/bench1/schedule/opus-4-1_refine/metrics.json[0m
+
+[0;34m═══════════════════════════════════════════[0m
+[0;34mSummary[0m
+[0;34m═══════════════════════════════════════════[0m
+Pass Rate:     [0;33m96.8%[0m
+Coverage:      [0;32m90%[0m
+Improvement:   [0;33m-6% coverage[0m
+

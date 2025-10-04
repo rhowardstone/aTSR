@@ -1,0 +1,11 @@
+{
+  "file": "/atb-data/rye/.claude/projects/-atb-data-5095-project-cloned-aTSR-bench-bench1-results-20250930-165335-schedule-sonnet-4-5-base-workspace/49ab4106-afab-4617-bfad-0e01ef4071bf.jsonl",
+  "message_count": 59,
+  "tokens": {
+    "total": 2935729,
+    "input": 135,
+    "output": 1241,
+    "cache_creation": 156791,
+    "cache_read": 2777562
+  }
+}

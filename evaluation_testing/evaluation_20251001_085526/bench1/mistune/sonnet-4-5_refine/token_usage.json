@@ -1,0 +1,11 @@
+{
+  "file": "/atb-data/rye/.claude/projects/-atb-data-5095-project-cloned-aTSR-bench-bench1-results-20250930-165335-mistune-sonnet-4-5-refine-workspace/9f63b8d0-04ed-4542-a938-de019d8999f2.jsonl",
+  "message_count": 94,
+  "tokens": {
+    "total": 5555247,
+    "input": 200,
+    "output": 1029,
+    "cache_creation": 138676,
+    "cache_read": 5415342
+  }
+}

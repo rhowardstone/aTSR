@@ -1,0 +1,27 @@
+{
+  "repository": "mistune",
+  "test_directory": "/atb-data/5095_project/cloned/aTSR/bench/bench1/results_20250930_165335/mistune/opus-4-1_base/workspace",
+  "timestamp": "2025-10-01T12:57:10Z",
+  "metrics": {
+    "test_functions": 376,
+    "test_lines": 0,
+    "tests_passed": 754,
+    "tests_failed": 45,
+    "pass_rate": 94.3,
+    "line_coverage": 76,
+    "branch_coverage": 0,
+    "mutation_score": 0
+  }
+,
+  "baseline": {
+    "directory": "/atb-data/5095_project/cloned/aTSR/bench/bench1/test_opus-4-1_base/mistune",
+    "test_functions": 0,
+    "test_lines": 0,
+    "coverage": 46
+  },
+  "improvements": {
+    "functions_added": 376,
+    "lines_added": 0,
+    "coverage_increase": 30
+  }
+}

@@ -1,0 +1,43 @@
+[0;34m═══════════════════════════════════════════[0m
+[0;34m    Test Metrics Evaluation[0m
+[0;34m═══════════════════════════════════════════[0m
+
+Repository: click
+Test directory: /atb-data/5095_project/cloned/aTSR/bench/bench1/results_20250930_165335/click/opus-4-1_base/workspace
+Baseline directory: /atb-data/5095_project/cloned/aTSR/bench/bench1/test_opus-4-1_base/click
+Output file: /atb-data/5095_project/cloned/aTSR/evaluation_testing3/evaluation_20251001_085526/bench1/click/opus-4-1_base/metrics.json
+
+[0;36mCounting tests...[0m
+  Test functions: 402
+  Test lines: 8
+
+[0;36mComparing to baseline...[0m
+  Baseline functions: 190
+  Baseline lines: 8
+[0;32m  Functions added: +212[0m
+[0;32m  Lines added: +0[0m
+  Function increase: 111.5%
+
+[0;36mRunning tests...[0m
+  Tests passed: 309/336
+  Pass rate: 91.9%
+
+[0;36mMeasuring coverage...[0m
+  Attempting coverage measurement for click...
+  Line coverage: 67%
+
+[0;36mMeasuring baseline coverage...[0m
+  Baseline coverage: 54%
+[0;32m  Coverage improvement: +13%[0m
+
+[0;36mGenerating metrics report...[0m
+[0;32m✓ Metrics saved to: /atb-data/5095_project/cloned/aTSR/evaluation_testing3/evaluation_20251001_085526/bench1/click/opus-4-1_base/metrics.json[0m
+
+[0;34m═══════════════════════════════════════════[0m
+[0;34mSummary[0m
+[0;34m═══════════════════════════════════════════[0m
+Pass Rate:     [0;33m91.9%[0m
+Coverage:      [0;33m67%[0m
+Improvement:   [0;32m+13% coverage[0m
+Tests Added:   [0;32m+212 functions[0m
+

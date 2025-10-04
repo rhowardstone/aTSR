@@ -1,0 +1,27 @@
+{
+  "repository": "schedule",
+  "test_directory": "/atb-data/5095_project/cloned/aTSR/bench/bench1/results_20250930_165335/schedule/opus-4-1_refine/workspace",
+  "timestamp": "2025-10-01T12:56:30Z",
+  "metrics": {
+    "test_functions": 380,
+    "test_lines": 5762,
+    "tests_passed": 121,
+    "tests_failed": 4,
+    "pass_rate": 96.8,
+    "line_coverage": 90,
+    "branch_coverage": 0,
+    "mutation_score": 0
+  }
+,
+  "baseline": {
+    "directory": "/atb-data/5095_project/cloned/aTSR/bench/bench1/test_opus-4-1_refine/schedule",
+    "test_functions": 168,
+    "test_lines": 3258,
+    "coverage": 96
+  },
+  "improvements": {
+    "functions_added": 212,
+    "lines_added": 2504,
+    "coverage_increase": -6
+  }
+}

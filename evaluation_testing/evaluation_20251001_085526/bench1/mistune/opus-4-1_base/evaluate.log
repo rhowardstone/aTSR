@@ -1,0 +1,42 @@
+[0;34m═══════════════════════════════════════════[0m
+[0;34m    Test Metrics Evaluation[0m
+[0;34m═══════════════════════════════════════════[0m
+
+Repository: mistune
+Test directory: /atb-data/5095_project/cloned/aTSR/bench/bench1/results_20250930_165335/mistune/opus-4-1_base/workspace
+Baseline directory: /atb-data/5095_project/cloned/aTSR/bench/bench1/test_opus-4-1_base/mistune
+Output file: /atb-data/5095_project/cloned/aTSR/evaluation_testing3/evaluation_20251001_085526/bench1/mistune/opus-4-1_base/metrics.json
+
+[0;36mCounting tests...[0m
+  Test functions: 376
+  Test lines: 0
+
+[0;36mComparing to baseline...[0m
+  Baseline functions: 0
+  Baseline lines: 0
+[0;32m  Functions added: +376[0m
+[0;32m  Lines added: +0[0m
+
+[0;36mRunning tests...[0m
+  Tests passed: 754/799
+  Pass rate: 94.3%
+
+[0;36mMeasuring coverage...[0m
+  Running coverage for mistune module (src structure)...
+  Line coverage: 76%
+
+[0;36mMeasuring baseline coverage...[0m
+  Baseline coverage: 46%
+[0;32m  Coverage improvement: +30%[0m
+
+[0;36mGenerating metrics report...[0m
+[0;32m✓ Metrics saved to: /atb-data/5095_project/cloned/aTSR/evaluation_testing3/evaluation_20251001_085526/bench1/mistune/opus-4-1_base/metrics.json[0m
+
+[0;34m═══════════════════════════════════════════[0m
+[0;34mSummary[0m
+[0;34m═══════════════════════════════════════════[0m
+Pass Rate:     [0;33m94.3%[0m
+Coverage:      [0;33m76%[0m
+Improvement:   [0;32m+30% coverage[0m
+Tests Added:   [0;32m+376 functions[0m
+
