@@ -34,8 +34,10 @@ This directory contains comprehensive evaluation results for the test suite refi
 - **Average Coverage (Base Strategy)**: 77.5%
 - **Average Improvement (Refine vs Base)**: -2.8%
 
+See [ANALYSIS.md](ANALYSIS.md) for autopsy of this attempt.
+
 ## Token Usage Summary
 
-See [token_analysis.md](token_analysis.md) for detailed breakdown.
+See [token_analysis.md](token_analysis.md) for detailed breakdown of token usage.
 
 **Total Tokens Used**: 65,117,313
