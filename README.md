@@ -19,13 +19,17 @@ aTSR provides **end-to-end test lifecycle management** through Claude Code skill
 
 | Feature | aTSR | obra/superpowers | Baseline |
 |---------|------|------------------|----------|
-| **Test Creation** | ✅ Automated from code analysis | ❌ Manual TDD only | ❌ Ad-hoc |
+| **Test Creation** | ✅ Batch analysis (398 functions → 50 tests) | ⚠️ Incremental TDD (test-by-test) | ❌ Ad-hoc |
 | **Test Refinement** | ✅ Coverage + Mutation + Properties | ❌ Not available | ❌ Guesswork |
+| **Use Case** | Existing codebases needing tests | New feature development | Any |
+| **Approach** | Analysis-driven (batch) | Test-first discipline (incremental) | Prompt-based |
 | **Multi-Language** | ✅ Python, JS/TS, Java, C/C++ | ⚠️ Framework agnostic | ⚠️ Language dependent |
 | **Methodology** | ✅ Scientific (measured) | ✅ Systematic (TDD) | ❌ None |
 | **Benchmarked** | ✅ Yes | ❌ No | ✅ Yes |
 
-**Complementary to obra/superpowers**: They provide TDD for writing new features. We provide automation for existing codebases.
+**Complementary to obra/superpowers**:
+- **obra TDD**: Best for writing NEW features (test-first, incremental RED-GREEN-REFACTOR)
+- **aTSR**: Best for EXISTING codebases (batch analysis, coverage-driven refinement)
 
 ---
 
@@ -38,9 +42,7 @@ git clone https://github.com/rhowardstone/aTSR.git
 cd aTSR
 ```
 
-### Option 1: Use as Claude Code Skills (Recommended)
-
-Install skills into your personal or project skills directory:
+### Install Skills
 
 ```bash
 # For personal use (all projects)
@@ -48,28 +50,13 @@ cp -r .claude/skills/* ~/.claude/skills/
 cp -r .claude/commands/* ~/.claude/commands/
 cp -r .claude/lib ~/.claude/
 
-# For this project only
-# Skills already in .claude/ - just start using them!
-```
-
-Add tools to PATH:
-```bash
+# Add tools to PATH (add to ~/.bashrc or ~/.zshrc for persistence)
 export PATH="$(pwd)/.claude/lib/atsr-tools:$PATH"
 ```
-
-### Option 2: Use Legacy Command (Old Approach)
-
-```bash
-bash src/install_command.sh
-```
-
-This installs the old monolithic 860-line prompt. **Not recommended** - use skills instead!
 
 ---
 
 ## 💡 Usage
-
-### With Skills (New Way)
 
 ```bash
 cd your-project
@@ -82,16 +69,10 @@ claude
 **What happens:**
 1. aTSR assesses your codebase size and language
 2. Determines if you need test creation or refinement
-3. Automatically runs appropriate workflow
-4. Uses coverage analysis, mutation testing, and property-based testing
-
-### With Legacy Command (Old Way)
-
-```bash
-cd your-project
-claude
-/refine-tests auto
-```
+3. Automatically runs appropriate workflow:
+   - **No tests?** → Analyzes code, generates test suite
+   - **Some tests?** → Identifies gaps via coverage, improves quality via mutations
+   - **Good tests?** → Adds property-based tests for algorithms
 
 ---
 
@@ -119,7 +100,7 @@ aTSR provides 7 specialized skills:
 |------|---------|
 | `atsr-size` | Assess codebase (LOC, test ratio, approach) |
 | `atsr-detect` | Detect language, framework, test runner |
-| `atsr-analyze-code` | Find functions needing tests |
+| `atsr-analyze-code` | Find functions needing tests (AST-based) |
 | `atsr-generate-tests` | Create initial test templates |
 | `atsr-coverage` | Run coverage analysis |
 | `atsr-gaps` | Parse coverage, identify gaps |
@@ -133,48 +114,53 @@ aTSR provides 7 specialized skills:
 
 ## 📊 Benchmarking
 
+### What We Test
+
+We compare **3 approaches** on the same codebases:
+
+1. **Baseline**: Simple prompt asking to improve tests
+2. **aTSR Skills**: Our complete skill system (`/refine-tests`)
+3. **[Planned] obra TDD**: Using obra's test-driven-development skill
+
 ### Test Repositories
 
-We provide 3 example repositories for testing:
+We use 3 real-world Python projects:
+
+- **schedule** (~400 LOC, scheduling library)
+- **mistune** (~2,600 LOC, Markdown parser)
+- **click** (~3,500 LOC, CLI framework)
+
+### How It Works
 
 ```bash
+# 1. Set up test repos (downloads and prepares them)
 bash src/setup_test_repos.sh examples
-ls examples/repos_reduced/
-# schedule, mistune, click
-```
 
-### Running Benchmarks
-
-Compare aTSR against baseline and obra/superpowers:
-
-```bash
-# Create benchmark runs
+# 2. Create benchmark copies (4 configurations × 3 repos = 12 runs)
 for n in 1 2 3; do
   bash src/create_benchmark.sh examples/repos_reduced/ bench/bench$n/
   bash src/run_benchmark.sh bench/bench$n/
 done
 
-# Evaluate results
-bash src/evaluate_all.sh bench/ --output-dir evaluation_results --verbose
+# 3. Evaluate results
+bash src/evaluate_all.sh bench/ --output-dir evaluation_results
 
-# Visualize
-python src/Create_visualization.py evaluation_results/summary.json evaluation_results/plot.png
+# 4. Visualize
+python src/Create_visualization.py evaluation_results/summary.json results.png
 ```
 
-### Benchmark Configurations
-
-We test 4 configurations:
-1. **Baseline** - Simple prompt, no skills
-2. **aTSR Skills** - Our complete skill system
-3. **obra TDD** - Using obra's test-driven-development skill
-4. **aTSR + obra** - Combined approach
-
-**Metrics:**
+**What gets measured:**
 - Coverage % achieved
-- Pass rate %
-- Token usage
-- Tests added
+- Pass rate % (tests passing / total tests)
+- Token usage (from Claude API logs)
+- Tests added (count)
 - Time to completion
+
+### Current Limitations
+
+⚠️ **Environment Isolation**: Benchmarks run **in series** using the **same Python environment**. Dependencies must be pre-installed globally. Future improvement: Use venvs per run.
+
+⚠️ **obra Comparison**: Not yet implemented. Would require adding obra/superpowers skills to the test environment.
 
 ---
 
@@ -187,14 +173,14 @@ User: /refine-tests
 
 1. atsr-size → detects 0 test files
 2. test-creation skill activates:
-   - atsr-analyze-code → finds all functions
+   - atsr-analyze-code → finds all 398 functions
    - atsr-generate-tests → creates test templates
-   - Human customizes TODOs
+   - Human customizes TODOs (boundaries, errors, edge cases)
    - Tests run and pass
 3. test-refinement skill takes over:
-   - atsr-coverage → baseline coverage
+   - atsr-coverage → measures baseline coverage
    - Adds missing edge cases
-   - atsr-mutate → verifies quality
+   - atsr-mutate → verifies test quality
 
 Result: 0 → 85 tests, 78% coverage, 72% mutation score
 ```
@@ -207,9 +193,9 @@ User: /refine-tests
 1. atsr-size → detects tests exist, 45% coverage
 2. test-refinement skill activates:
    - atsr-coverage → identifies gaps
-   - atsr-gaps → prioritizes critical files
+   - atsr-gaps → prioritizes critical files (business logic first)
    - Human adds tests for gaps
-   - atsr-mutate → finds weak tests
+   - atsr-mutate → finds weak tests (boundary conditions, null checks)
    - atsr-survivors → recommends killer tests
    - Human strengthens assertions
 
@@ -223,30 +209,34 @@ User: /refine-tests
 
 1. atsr-size → detects 73 LOC
 2. test-suite-management skill:
-   - Skips all tools
-   - Just reads code and tests
+   - Skips all tools (overhead not worth it)
+   - Just reads code and tests directly
    - Identifies obvious gaps (boundaries, errors)
    - Writes them directly
 
-Result: 5 minutes, perfect tests, no overhead
+Result: 5 minutes, perfect tests, zero tool overhead
 ```
 
 ---
 
-## 📁 Directory Structure
+## 📁 Project Structure
 
 ```
 aTSR/
 ├── .claude/                        # Claude Code skills and tools
-│   ├── skills/                     # 7 skills following obra patterns
+│   ├── skills/                     # 7 modular skills (<500 words each)
 │   ├── commands/                   # Thin command wrappers
 │   └── lib/atsr-tools/             # 9 CLI utilities
-├── src/                            # Legacy scripts and original prompt
-│   ├── refine-tests.md             # Original 860-line prompt (deprecated)
-│   ├── evaluate_all.sh             # Benchmark evaluation
-│   └── Create_visualization.py     # Results visualization
-├── examples/                       # Test repositories
-├── evaluation_testing/             # Benchmark results
+├── src/                            # Benchmark infrastructure
+│   ├── create_benchmark.sh         # Set up benchmark runs
+│   ├── run_benchmark.sh            # Execute benchmarks
+│   ├── evaluate_all.sh             # Analyze results
+│   ├── setup_test_repos.sh         # Download test repositories
+│   └── Create_visualization.py     # Generate plots
+├── initial_experiments/            # Original research experiments
+│   ├── monolithic_prompt.md        # Original 860-line prompt
+│   └── prompt_variants/            # 6 prompt design iterations
+├── examples/                       # Generated test repos (gitignored)
 ├── CLAUDE.md                       # Project memory and architecture
 └── README.md                       # This file
 ```
@@ -255,35 +245,35 @@ aTSR/
 
 ## 📚 Documentation
 
-- **[CLAUDE.md](CLAUDE.md)** - Complete architecture, competitive analysis, tool manifest
-- **[.claude/skills/](.claude/skills/)** - Individual skill documentation
-- **[evaluation_testing/v2_results/](evaluation_testing/v2_results/)** - Original experiment analysis
+- **[CLAUDE.md](CLAUDE.md)** - Complete architecture, competitive analysis, tool manifest, design decisions
+- **[.claude/skills/](.claude/skills/)** - Individual skill documentation (WHEN to use, HOW to interpret)
+- **[initial_experiments/](initial_experiments/)** - Original research: monolithic prompt evolution
 
 ---
 
 ## 🔬 Research
 
-### Original Experiment Results
+### Key Findings from Initial Experiments
 
-Our initial experiment compared two approaches:
+Our initial experiment (in `initial_experiments/`) compared prompt designs:
 
-- **Base** (simple prompt): 77.5% coverage, 29.3M tokens
-- **Refine** (860-line workflow): 74.7% coverage, 35.8M tokens
+- **Baseline** (simple prompt): **77.5% coverage**, 29.3M tokens
+- **Monolithic** (860-line workflow): **74.7% coverage**, 35.8M tokens ❌
 
-**Key Finding**: Simpler was better! This led to our modular skill design.
+**Lesson learned**: Simpler was better! Complex inline scripts caused agents to copy code wastefully.
 
-### New Skill-Based Approach
+### Skill-Based Redesign
 
-Based on lessons learned, we built:
-- Modular skills (< 500 words each)
-- CLI tools (deterministic, testable)
-- Clear decision trees
-- Following obra/superpowers best practices
+Based on these findings, we built:
+- ✅ Modular skills (< 500 words each) - no inline scripts
+- ✅ CLI tools (deterministic, testable) - agents invoke, don't copy
+- ✅ Clear decision trees (test-suite-management routes appropriately)
+- ✅ Following obra/superpowers best practices
 
-**Expected Improvements:**
-- Better coverage than both baseline and original
-- Lower token usage than original monolith
-- Complementary to obra (creation + refinement)
+**Expected improvements:**
+- Better coverage than baseline (systematic vs ad-hoc)
+- Lower tokens than monolithic (no script copying)
+- Complementary to obra (batch vs incremental)
 
 ---
 
@@ -293,21 +283,21 @@ We welcome contributions! Especially:
 
 - Additional language support (Go, Rust, Ruby)
 - New test quality metrics
-- Benchmark comparisons
+- obra/superpowers integration for benchmarking
+- Virtual environment isolation for benchmarks
 - Skill improvements
 
 See the official skill creation guide: [https://github.com/anthropics/skills](https://github.com/anthropics/skills)
-
 ---
 
 ## 📈 Roadmap
 
 - [ ] Complete benchmark comparison (aTSR vs obra vs baseline)
+- [ ] Add venv isolation to benchmarks
 - [ ] Integration testing skill
 - [ ] Performance testing patterns
 - [ ] Security testing guidance
 - [ ] Snapshot testing skill
-- [ ] Support for additional languages
 
 ---
 
