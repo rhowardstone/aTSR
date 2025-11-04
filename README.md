@@ -296,7 +296,7 @@ We welcome contributions! Especially:
 - Benchmark comparisons
 - Skill improvements
 
-See our skill creation guide: `.claude/skills/`
+See the official skill creation guide: [https://github.com/anthropics/skills](https://github.com/anthropics/skills)
 
 ---
 
