@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""
+atsr-recommend: Generate test recommendations from code analysis
+Usage: atsr-recommend <analysis.json> [--gaps gaps.json]
+Output: JSON with specific test recommendations
+"""
+
+import sys
+import json
+from pathlib import Path
+
+def generate_recommendations(analysis, gaps=None):
+    """Generate specific test recommendations"""
+    recommendations = []
+
+    for func in analysis.get('functions', []):
+        # Basic test recommendation
+        recommendations.append({
+            'function': func['name'],
+            'file': func['file'],
+            'line': func['line'],
+            'test_type': 'basic',
+            'description': f"Add basic test for {func['name']}",
+            'suggested_test_name': func['suggested_test_name'],
+            'priority': 'high'
+        })
+
+        # Boundary tests if function has parameters
+        if func.get('args'):
+            recommendations.append({
+                'function': func['name'],
+                'file': func['file'],
+                'line': func['line'],
+                'test_type': 'boundary',
+                'description': f"Add boundary value tests (0, -1, empty, null)",
+                'suggested_test_name': f"{func['suggested_test_name']}_boundaries",
+                'priority': 'medium'
+            })
+
+        # Error path tests
+        recommendations.append({
+            'function': func['name'],
+            'file': func['file'],
+            'line': func['line'],
+            'test_type': 'error',
+            'description': f"Add error handling tests",
+            'suggested_test_name': f"{func['suggested_test_name']}_errors",
+            'priority': 'medium'
+        })
+
+    return {
+        'total_recommendations': len(recommendations),
+        'recommendations': recommendations,
+        'summary': {
+            'high_priority': len([r for r in recommendations if r['priority'] == 'high']),
+            'medium_priority': len([r for r in recommendations if r['priority'] == 'medium'])
+        }
+    }
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(0)
+
+    analysis_file = sys.argv[1]
+
+    if not Path(analysis_file).exists():
+        print(f"Error: Analysis file '{analysis_file}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    with open(analysis_file) as f:
+        analysis = json.load(f)
+
+    result = generate_recommendations(analysis)
+    print(json.dumps(result, indent=2))
+
+if __name__ == '__main__':
+    main()

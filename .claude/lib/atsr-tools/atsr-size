@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# atsr-size: Analyze codebase size and recommend approach
+# Usage: atsr-size [directory]
+# Output: JSON with LOC, file counts, and recommended approach
+
+set -euo pipefail
+
+# Parse arguments
+TARGET_DIR="${1:-.}"
+
+if [ ! -d "$TARGET_DIR" ]; then
+    echo "Error: Directory '$TARGET_DIR' not found" >&2
+    exit 1
+fi
+
+# Count lines of actual code (not tests, not generated, not dependencies)
+count_code_lines() {
+    local dir="$1"
+    find "$dir" -type f \
+        \( -name "*.py" -o -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.java" -o -name "*.c" -o -name "*.cpp" -o -name "*.cc" -o -name "*.h" -o -name "*.hpp" \) \
+        ! -path "*/test*" \
+        ! -path "*/tests/*" \
+        ! -path "*/__pycache__/*" \
+        ! -path "*/node_modules/*" \
+        ! -path "*/venv/*" \
+        ! -path "*/.venv/*" \
+        ! -path "*/env/*" \
+        ! -path "*/build/*" \
+        ! -path "*/dist/*" \
+        ! -path "*/target/*" \
+        ! -path "*/.git/*" \
+        ! -name "*_test.py" \
+        ! -name "*_test.js" \
+        ! -name "*_test.ts" \
+        ! -name "*.test.js" \
+        ! -name "*.test.ts" \
+        ! -name "*.spec.js" \
+        ! -name "*.spec.ts" \
+        2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}'
+}
+
+# Count test files and lines
+count_test_lines() {
+    local dir="$1"
+    find "$dir" -type f \
+        \( -name "*test*.py" -o -name "*test*.js" -o -name "*test*.ts" -o -name "*test*.java" -o -name "*Test.java" -o -name "*_test.c" -o -name "*_test.cpp" \) \
+        ! -path "*/__pycache__/*" \
+        ! -path "*/node_modules/*" \
+        ! -path "*/build/*" \
+        ! -path "*/dist/*" \
+        ! -path "*/target/*" \
+        2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}'
+}
+
+# Count code files (not tests)
+count_code_files() {
+    local dir="$1"
+    find "$dir" -type f \
+        \( -name "*.py" -o -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.java" -o -name "*.c" -o -name "*.cpp" \) \
+        ! -path "*/test*" \
+        ! -path "*/tests/*" \
+        ! -path "*/__pycache__/*" \
+        ! -path "*/node_modules/*" \
+        ! -path "*/venv/*" \
+        ! -path "*/.venv/*" \
+        ! -path "*/build/*" \
+        ! -path "*/dist/*" \
+        ! -path "*/target/*" \
+        ! -name "*_test.py" \
+        ! -name "*test*.js" \
+        ! -name "*test*.ts" \
+        2>/dev/null | wc -l
+}
+
+# Count test files
+count_test_files() {
+    local dir="$1"
+    find "$dir" -type f \
+        \( -name "*test*.py" -o -name "*test*.js" -o -name "*test*.ts" -o -name "*Test.java" \) \
+        ! -path "*/__pycache__/*" \
+        ! -path "*/node_modules/*" \
+        ! -path "*/build/*" \
+        ! -path "*/dist/*" \
+        2>/dev/null | wc -l
+}
+
+# Calculate metrics
+CODE_LOC=$(count_code_lines "$TARGET_DIR")
+TEST_LOC=$(count_test_lines "$TARGET_DIR")
+CODE_FILES=$(count_code_files "$TARGET_DIR")
+TEST_FILES=$(count_test_files "$TARGET_DIR")
+
+# Default to 0 if empty
+CODE_LOC=${CODE_LOC:-0}
+TEST_LOC=${TEST_LOC:-0}
+CODE_FILES=${CODE_FILES:-0}
+TEST_FILES=${TEST_FILES:-0}
+
+# Determine approach based on size
+APPROACH="unknown"
+TIME_ESTIMATE="unknown"
+DESCRIPTION=""
+
+if [ "$CODE_LOC" -lt 100 ]; then
+    APPROACH="direct-fix"
+    TIME_ESTIMATE="2-5 min"
+    DESCRIPTION="Just read the code and tests. Fix obvious gaps. No tools needed."
+elif [ "$CODE_LOC" -lt 1000 ]; then
+    APPROACH="light-touch"
+    TIME_ESTIMATE="5-15 min"
+    DESCRIPTION="Quick coverage check, spot main gaps, write missing tests"
+elif [ "$CODE_LOC" -lt 5000 ]; then
+    APPROACH="standard"
+    TIME_ESTIMATE="15-30 min"
+    DESCRIPTION="Coverage + targeted mutations on critical paths"
+else
+    APPROACH="full-workflow"
+    TIME_ESTIMATE="30+ min"
+    DESCRIPTION="Complete multi-phase analysis with all tools"
+fi
+
+# Output JSON
+cat <<EOF
+{
+  "code_loc": $CODE_LOC,
+  "test_loc": $TEST_LOC,
+  "code_files": $CODE_FILES,
+  "test_files": $TEST_FILES,
+  "total_loc": $((CODE_LOC + TEST_LOC)),
+  "has_tests": $([ "$TEST_FILES" -gt 0 ] && echo "true" || echo "false"),
+  "test_ratio": $([ "$CODE_LOC" -gt 0 ] && echo "scale=2; $TEST_LOC / $CODE_LOC" | bc || echo "0"),
+  "approach": "$APPROACH",
+  "time_estimate": "$TIME_ESTIMATE",
+  "description": "$DESCRIPTION"
+}
+EOF

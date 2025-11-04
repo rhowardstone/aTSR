@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""
+atsr-gaps: Parse coverage data and identify critical gaps
+Usage: atsr-gaps <coverage.json>
+Output: JSON with prioritized gaps
+"""
+
+import sys
+import json
+from pathlib import Path
+
+def analyze_python_coverage(coverage_file):
+    """Analyze coverage.py JSON output"""
+    with open(coverage_file) as f:
+        data = json.load(f)
+
+    gaps = []
+
+    for filename, file_data in data.get('files', {}).items():
+        # Skip test files
+        if 'test' in filename.lower():
+            continue
+
+        summary = file_data.get('summary', {})
+        covered_lines = summary.get('covered_lines', 0)
+        missing_lines = summary.get('missing_lines', 0)
+        total_lines = covered_lines + missing_lines
+
+        if total_lines == 0:
+            continue
+
+        coverage_pct = (covered_lines / total_lines * 100) if total_lines > 0 else 0
+
+        # Identify as gap if < 80% coverage
+        if coverage_pct < 80:
+            gaps.append({
+                'file': filename,
+                'coverage': round(coverage_pct, 2),
+                'covered_lines': covered_lines,
+                'missing_lines': missing_lines,
+                'total_lines': total_lines,
+                'priority': 'high' if coverage_pct < 50 else 'medium'
+            })
+
+    # Sort by priority (lowest coverage first)
+    gaps.sort(key=lambda x: x['coverage'])
+
+    return gaps
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(0)
+
+    coverage_file = sys.argv[1]
+
+    if not Path(coverage_file).exists():
+        print(f"Error: Coverage file '{coverage_file}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    gaps = analyze_python_coverage(coverage_file)
+
+    result = {
+        'total_gaps': len(gaps),
+        'gaps': gaps,
+        'summary': {
+            'high_priority': len([g for g in gaps if g['priority'] == 'high']),
+            'medium_priority': len([g for g in gaps if g['priority'] == 'medium'])
+        }
+    }
+
+    print(json.dumps(result, indent=2))
+
+if __name__ == '__main__':
+    main()

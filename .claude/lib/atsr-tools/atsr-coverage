@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# atsr-coverage: Universal coverage runner
+# Usage: atsr-coverage [--language python|javascript|java]
+# Output: Runs coverage and outputs JSON path
+
+set -euo pipefail
+
+LANGUAGE="${2:-auto}"
+OUTPUT_DIR=".test-refinement/coverage"
+
+mkdir -p "$OUTPUT_DIR"
+
+# Auto-detect language if not specified
+if [ "$LANGUAGE" = "auto" ]; then
+    if [ -f "pyproject.toml" ] || [ -f "setup.py" ]; then
+        LANGUAGE="python"
+    elif [ -f "package.json" ]; then
+        LANGUAGE="javascript"
+    elif [ -f "pom.xml" ]; then
+        LANGUAGE="java"
+    fi
+fi
+
+case "$LANGUAGE" in
+    python)
+        echo "Running Python coverage..." >&2
+        coverage run --branch -m pytest 2>&1 | tee "$OUTPUT_DIR/coverage.log"
+        coverage json -o "$OUTPUT_DIR/coverage.json"
+        coverage report > "$OUTPUT_DIR/report.txt"
+        echo "{\"coverage_file\": \"$OUTPUT_DIR/coverage.json\", \"tool\": \"coverage.py\"}"
+        ;;
+    javascript|typescript)
+        echo "Running JavaScript coverage..." >&2
+        if grep -q '"jest"' package.json 2>/dev/null; then
+            npx jest --coverage --coverageDirectory="$OUTPUT_DIR" 2>&1 | tee "$OUTPUT_DIR/coverage.log"
+            echo "{\"coverage_file\": \"$OUTPUT_DIR/coverage-final.json\", \"tool\": \"jest\"}"
+        else
+            npx nyc --reporter=json --report-dir="$OUTPUT_DIR" npm test 2>&1 | tee "$OUTPUT_DIR/coverage.log"
+            echo "{\"coverage_file\": \"$OUTPUT_DIR/coverage.json\", \"tool\": \"nyc\"}"
+        fi
+        ;;
+    java)
+        echo "Running Java coverage..." >&2
+        mvn clean test jacoco:report 2>&1 | tee "$OUTPUT_DIR/coverage.log"
+        cp target/site/jacoco/jacoco.xml "$OUTPUT_DIR/"
+        echo "{\"coverage_file\": \"$OUTPUT_DIR/jacoco.xml\", \"tool\": \"jacoco\"}"
+        ;;
+    *)
+        echo "Error: Unknown language '$LANGUAGE'" >&2
+        exit 1
+        ;;
+esac

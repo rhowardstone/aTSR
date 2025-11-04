@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""
+atsr-survivors: Analyze survived mutants and recommend tests
+Usage: atsr-survivors <results.txt>
+Output: JSON with survivor analysis and recommendations
+"""
+
+import sys
+import json
+import re
+from pathlib import Path
+
+def analyze_mutmut_results(results_file):
+    """Parse mutmut results and identify survivors"""
+    survivors = []
+
+    with open(results_file) as f:
+        content = f.read()
+
+    # Look for lines indicating survived mutants
+    for line in content.split('\n'):
+        if 'Survived' in line or 'survived' in line:
+            survivors.append({'line': line.strip(), 'type': 'unknown'})
+
+    recommendations = []
+
+    # Generate recommendations based on common patterns
+    for survivor in survivors:
+        line = survivor['line']
+
+        if '>=' in line or '<=' in line:
+            recommendations.append({
+                'type': 'boundary',
+                'description': 'Add test for exact boundary condition',
+                'mutant': line
+            })
+        elif 'return None' in line or 'return null' in line:
+            recommendations.append({
+                'type': 'null_check',
+                'description': 'Add test for None/null return value',
+                'mutant': line
+            })
+        elif 'Exception' in line or 'Error' in line:
+            recommendations.append({
+                'type': 'exception',
+                'description': 'Add test for exception handling',
+                'mutant': line
+            })
+
+    return {
+        'total_survivors': len(survivors),
+        'recommendations': recommendations,
+        'summary': {
+            'boundary_issues': len([r for r in recommendations if r['type'] == 'boundary']),
+            'null_issues': len([r for r in recommendations if r['type'] == 'null_check']),
+            'exception_issues': len([r for r in recommendations if r['type'] == 'exception'])
+        }
+    }
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(0)
+
+    results_file = sys.argv[1]
+
+    if not Path(results_file).exists():
+        print(f"Error: Results file '{results_file}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    analysis = analyze_mutmut_results(results_file)
+    print(json.dumps(analysis, indent=2))
+
+if __name__ == '__main__':
+    main()
