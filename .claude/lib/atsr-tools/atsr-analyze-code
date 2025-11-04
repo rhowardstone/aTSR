@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+"""
+atsr-analyze-code: Analyze source code to find functions/methods needing tests
+Usage: atsr-analyze-code [directory] [--language python|javascript|typescript|java|cpp]
+Output: JSON with functions, their signatures, and suggested test names
+"""
+
+import sys
+import os
+import json
+import ast
+import re
+from pathlib import Path
+from typing import List, Dict, Any
+
+def analyze_python_file(filepath: str) -> List[Dict[str, Any]]:
+    """Extract functions and classes from Python file using AST"""
+    functions = []
+
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        tree = ast.parse(content, filename=filepath)
+
+        for node in ast.walk(tree):
+            # Top-level functions
+            if isinstance(node, ast.FunctionDef):
+                if not node.name.startswith('_'):  # Skip private functions
+                    functions.append({
+                        'name': node.name,
+                        'type': 'function',
+                        'file': filepath,
+                        'line': node.lineno,
+                        'args': [arg.arg for arg in node.args.args],
+                        'is_async': isinstance(node, ast.AsyncFunctionDef),
+                        'docstring': ast.get_docstring(node) or '',
+                        'suggested_test_name': f"test_{node.name}"
+                    })
+
+            # Class methods
+            elif isinstance(node, ast.ClassDef):
+                class_name = node.name
+                for item in node.body:
+                    if isinstance(item, ast.FunctionDef) and not item.name.startswith('_'):
+                        functions.append({
+                            'name': f"{class_name}.{item.name}",
+                            'type': 'method',
+                            'class': class_name,
+                            'file': filepath,
+                            'line': item.lineno,
+                            'args': [arg.arg for arg in item.args.args if arg.arg != 'self'],
+                            'is_async': isinstance(item, ast.AsyncFunctionDef),
+                            'docstring': ast.get_docstring(item) or '',
+                            'suggested_test_name': f"test_{class_name.lower()}_{item.name}"
+                        })
+
+    except Exception as e:
+        print(f"Warning: Could not parse {filepath}: {e}", file=sys.stderr)
+
+    return functions
+
+def analyze_javascript_file(filepath: str) -> List[Dict[str, Any]]:
+    """Extract functions from JavaScript/TypeScript using regex"""
+    functions = []
+
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Match function declarations: function foo(...) { }
+        func_pattern = r'^\s*(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\((.*?)\)'
+
+        # Match arrow functions: const foo = (...) => { }
+        arrow_pattern = r'^\s*(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s+)?\((.*?)\)\s*=>'
+
+        # Match class methods: methodName(...) { }
+        method_pattern = r'^\s*(?:async\s+)?(\w+)\s*\((.*?)\)\s*{'
+
+        lines = content.split('\n')
+        in_class = None
+        class_pattern = r'^\s*(?:export\s+)?class\s+(\w+)'
+
+        for i, line in enumerate(lines, 1):
+            # Track if we're in a class
+            class_match = re.match(class_pattern, line)
+            if class_match:
+                in_class = class_match.group(1)
+            elif line.strip() == '}' and in_class:
+                in_class = None
+
+            # Match functions
+            match = re.match(func_pattern, line) or re.match(arrow_pattern, line)
+            if match:
+                name = match.group(1)
+                args = match.group(2).strip()
+                functions.append({
+                    'name': name,
+                    'type': 'function',
+                    'file': filepath,
+                    'line': i,
+                    'args': [a.strip() for a in args.split(',') if a.strip()],
+                    'is_async': 'async' in line,
+                    'suggested_test_name': f"test_{name}"
+                })
+
+            # Match methods (only inside classes)
+            elif in_class:
+                match = re.match(method_pattern, line)
+                if match:
+                    name = match.group(1)
+                    # Skip constructor and private methods
+                    if name not in ['constructor'] and not name.startswith('_'):
+                        args = match.group(2).strip()
+                        functions.append({
+                            'name': f"{in_class}.{name}",
+                            'type': 'method',
+                            'class': in_class,
+                            'file': filepath,
+                            'line': i,
+                            'args': [a.strip() for a in args.split(',') if a.strip()],
+                            'is_async': 'async' in line,
+                            'suggested_test_name': f"test_{in_class}_{name}"
+                        })
+
+    except Exception as e:
+        print(f"Warning: Could not parse {filepath}: {e}", file=sys.stderr)
+
+    return functions
+
+def analyze_directory(directory: str, language: str = None) -> Dict[str, Any]:
+    """Analyze all source files in directory"""
+
+    all_functions = []
+
+    # Determine file extensions
+    if language == 'python':
+        extensions = ['.py']
+    elif language in ['javascript', 'typescript']:
+        extensions = ['.js', '.ts', '.jsx', '.tsx']
+    elif language == 'java':
+        extensions = ['.java']
+    elif language in ['c', 'cpp', 'c++']:
+        extensions = ['.c', '.cpp', '.cc', '.cxx', '.h', '.hpp']
+    else:
+        # Auto-detect
+        extensions = ['.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.c', '.cpp']
+
+    # Walk directory
+    for root, dirs, files in os.walk(directory):
+        # Skip test directories and common ignore patterns
+        dirs[:] = [d for d in dirs if d not in ['test', 'tests', '__pycache__', 'node_modules', 'venv', '.venv', 'build', 'dist', 'target', '.git']]
+
+        for file in files:
+            # Skip test files
+            if 'test' in file.lower():
+                continue
+
+            # Check extension
+            ext = Path(file).suffix
+            if ext not in extensions:
+                continue
+
+            filepath = os.path.join(root, file)
+
+            # Analyze based on extension
+            if ext == '.py':
+                all_functions.extend(analyze_python_file(filepath))
+            elif ext in ['.js', '.ts', '.jsx', '.tsx']:
+                all_functions.extend(analyze_javascript_file(filepath))
+
+    return {
+        'total_functions': len(all_functions),
+        'functions': all_functions,
+        'summary': {
+            'by_type': {
+                'function': len([f for f in all_functions if f['type'] == 'function']),
+                'method': len([f for f in all_functions if f['type'] == 'method'])
+            },
+            'async_count': len([f for f in all_functions if f.get('is_async', False)])
+        }
+    }
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ['-h', '--help']:
+        print(__doc__)
+        sys.exit(0)
+
+    directory = sys.argv[1]
+    language = None
+
+    # Parse optional language argument
+    if len(sys.argv) > 2 and sys.argv[2] == '--language' and len(sys.argv) > 3:
+        language = sys.argv[3]
+
+    if not os.path.isdir(directory):
+        print(f"Error: Directory '{directory}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    result = analyze_directory(directory, language)
+    print(json.dumps(result, indent=2))
+
+if __name__ == '__main__':
+    main()

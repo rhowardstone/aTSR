@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+# atsr-detect: Detect project language, framework, and test runner
+# Usage: atsr-detect [directory]
+# Output: JSON with language, framework, test_runner, and tool availability
+
+set -euo pipefail
+
+TARGET_DIR="${1:-.}"
+
+if [ ! -d "$TARGET_DIR" ]; then
+    echo "Error: Directory '$TARGET_DIR' not found" >&2
+    exit 1
+fi
+
+cd "$TARGET_DIR"
+
+# Initialize variables
+LANGUAGE="unknown"
+FRAMEWORK="unknown"
+TEST_RUNNER="unknown"
+COVERAGE_TOOL="unknown"
+MUTATION_TOOL="unknown"
+
+# Python detection
+if [ -f "setup.py" ] || [ -f "pyproject.toml" ] || [ -f "requirements.txt" ] || [ -f "Pipfile" ]; then
+    LANGUAGE="python"
+
+    # Detect test runner
+    if [ -f "pytest.ini" ] || grep -q "pytest" requirements.txt pyproject.toml 2>/dev/null; then
+        TEST_RUNNER="pytest"
+    else
+        TEST_RUNNER="unittest"
+    fi
+
+    # Detect framework
+    if grep -q "django" requirements.txt pyproject.toml setup.py 2>/dev/null; then
+        FRAMEWORK="django"
+    elif grep -q "flask" requirements.txt pyproject.toml setup.py 2>/dev/null; then
+        FRAMEWORK="flask"
+    elif grep -q "fastapi" requirements.txt pyproject.toml setup.py 2>/dev/null; then
+        FRAMEWORK="fastapi"
+    fi
+
+    COVERAGE_TOOL="coverage"
+    MUTATION_TOOL="mutmut"
+
+# JavaScript/TypeScript detection
+elif [ -f "package.json" ]; then
+    LANGUAGE="javascript"
+
+    # Check for TypeScript
+    if [ -f "tsconfig.json" ]; then
+        LANGUAGE="typescript"
+    fi
+
+    # Detect test runner
+    if grep -q '"jest"' package.json; then
+        TEST_RUNNER="jest"
+        COVERAGE_TOOL="jest"
+    elif grep -q '"mocha"' package.json; then
+        TEST_RUNNER="mocha"
+        COVERAGE_TOOL="nyc"
+    elif grep -q '"vitest"' package.json; then
+        TEST_RUNNER="vitest"
+        COVERAGE_TOOL="vitest"
+    fi
+
+    # Detect framework
+    if grep -q '"react"' package.json; then
+        FRAMEWORK="react"
+    elif grep -q '"vue"' package.json; then
+        FRAMEWORK="vue"
+    elif grep -q '"angular"' package.json; then
+        FRAMEWORK="angular"
+    elif grep -q '"express"' package.json; then
+        FRAMEWORK="express"
+    elif grep -q '"next"' package.json; then
+        FRAMEWORK="next"
+    fi
+
+    MUTATION_TOOL="stryker"
+
+# Java detection
+elif [ -f "pom.xml" ]; then
+    LANGUAGE="java"
+    FRAMEWORK="maven"
+    TEST_RUNNER="junit"
+    COVERAGE_TOOL="jacoco"
+    MUTATION_TOOL="pitest"
+
+elif [ -f "build.gradle" ] || [ -f "build.gradle.kts" ]; then
+    LANGUAGE="java"
+    FRAMEWORK="gradle"
+    TEST_RUNNER="junit"
+    COVERAGE_TOOL="jacoco"
+    MUTATION_TOOL="pitest"
+
+# C/C++ detection
+elif [ -f "CMakeLists.txt" ]; then
+    LANGUAGE="c++"
+    FRAMEWORK="cmake"
+    TEST_RUNNER="ctest"
+    COVERAGE_TOOL="gcov"
+    MUTATION_TOOL="mull"
+
+elif [ -f "Makefile" ]; then
+    # Check if it's C or C++
+    if ls *.cpp *.cc *.cxx 2>/dev/null | grep -q .; then
+        LANGUAGE="c++"
+    elif ls *.c 2>/dev/null | grep -q .; then
+        LANGUAGE="c"
+    fi
+    FRAMEWORK="make"
+    TEST_RUNNER="custom"
+    COVERAGE_TOOL="gcov"
+    MUTATION_TOOL="mull"
+
+# Go detection
+elif [ -f "go.mod" ]; then
+    LANGUAGE="go"
+    TEST_RUNNER="go test"
+    COVERAGE_TOOL="go test -cover"
+    MUTATION_TOOL="go-mutesting"
+
+# Rust detection
+elif [ -f "Cargo.toml" ]; then
+    LANGUAGE="rust"
+    FRAMEWORK="cargo"
+    TEST_RUNNER="cargo test"
+    COVERAGE_TOOL="tarpaulin"
+    MUTATION_TOOL="cargo-mutants"
+fi
+
+# Check tool availability
+check_tool() {
+    command -v "$1" &>/dev/null && echo "true" || echo "false"
+}
+
+check_python_package() {
+    python3 -c "import $1" 2>/dev/null && echo "true" || echo "false"
+}
+
+check_npm_package() {
+    [ -d "node_modules/$1" ] && echo "true" || echo "false"
+}
+
+# Tool availability checks
+TOOLS_AVAILABLE="{"
+
+case $LANGUAGE in
+    python)
+        TOOLS_AVAILABLE+="\"python\": $(check_tool python3), "
+        TOOLS_AVAILABLE+="\"pytest\": $(check_tool pytest), "
+        TOOLS_AVAILABLE+="\"coverage\": $(check_tool coverage), "
+        TOOLS_AVAILABLE+="\"mutmut\": $(check_tool mutmut)"
+        ;;
+    javascript|typescript)
+        TOOLS_AVAILABLE+="\"node\": $(check_tool node), "
+        TOOLS_AVAILABLE+="\"npm\": $(check_tool npm), "
+        TOOLS_AVAILABLE+="\"jest\": $(check_npm_package jest), "
+        TOOLS_AVAILABLE+="\"nyc\": $(check_npm_package nyc), "
+        TOOLS_AVAILABLE+="\"stryker\": $(check_npm_package @stryker-mutator/core)"
+        ;;
+    java)
+        TOOLS_AVAILABLE+="\"java\": $(check_tool java), "
+        TOOLS_AVAILABLE+="\"mvn\": $(check_tool mvn), "
+        TOOLS_AVAILABLE+="\"gradle\": $(check_tool gradle)"
+        ;;
+    c|c++)
+        TOOLS_AVAILABLE+="\"gcc\": $(check_tool gcc), "
+        TOOLS_AVAILABLE+="\"gcov\": $(check_tool gcov), "
+        TOOLS_AVAILABLE+="\"cmake\": $(check_tool cmake)"
+        ;;
+    go)
+        TOOLS_AVAILABLE+="\"go\": $(check_tool go)"
+        ;;
+    rust)
+        TOOLS_AVAILABLE+="\"cargo\": $(check_tool cargo)"
+        ;;
+    *)
+        TOOLS_AVAILABLE+="\"unknown\": true"
+        ;;
+esac
+
+TOOLS_AVAILABLE+="}"
+
+# Output JSON
+cat <<EOF
+{
+  "language": "$LANGUAGE",
+  "framework": "$FRAMEWORK",
+  "test_runner": "$TEST_RUNNER",
+  "coverage_tool": "$COVERAGE_TOOL",
+  "mutation_tool": "$MUTATION_TOOL",
+  "tools_available": $TOOLS_AVAILABLE
+}
+EOF

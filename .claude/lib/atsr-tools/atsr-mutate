@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# atsr-mutate: Universal mutation testing runner
+# Usage: atsr-mutate [--language python|javascript] [--timeout 600]
+# Output: Runs mutation testing with time limit
+
+set -euo pipefail
+
+LANGUAGE="${2:-auto}"
+TIMEOUT="${4:-600}"  # 10 minutes default
+OUTPUT_DIR=".test-refinement/mutations"
+
+mkdir -p "$OUTPUT_DIR"
+
+# Auto-detect language
+if [ "$LANGUAGE" = "auto" ]; then
+    if [ -f "setup.py" ] || [ -f "pyproject.toml" ]; then
+        LANGUAGE="python"
+    elif [ -f "package.json" ]; then
+        LANGUAGE="javascript"
+    fi
+fi
+
+case "$LANGUAGE" in
+    python)
+        echo "Running Python mutation testing (timeout: ${TIMEOUT}s)..." >&2
+        timeout "$TIMEOUT" mutmut run --use-coverage 2>&1 | tee "$OUTPUT_DIR/mutmut.log" || true
+        mutmut results > "$OUTPUT_DIR/results.txt" 2>&1 || true
+        echo "{\"results_file\": \"$OUTPUT_DIR/results.txt\", \"tool\": \"mutmut\"}"
+        ;;
+    javascript|typescript)
+        echo "Running JavaScript mutation testing..." >&2
+        npx stryker run --concurrency 4 2>&1 | tee "$OUTPUT_DIR/stryker.log" || true
+        echo "{\"results_file\": \"$OUTPUT_DIR/stryker.log\", \"tool\": \"stryker\"}"
+        ;;
+    *)
+        echo "Error: Unknown language '$LANGUAGE'" >&2
+        exit 1
+        ;;
+esac
