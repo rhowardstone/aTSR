@@ -18,15 +18,18 @@ env/
 # Test refinement working directories
 .test-refinement/
 
-# Generated test repositories
+# Generated test repositories (created by setup_test_repos.sh)
 examples/repos/
 examples/repos_reduced/
 examples/*.txt
 
-# Benchmark results
+# Benchmark results (created during benchmark runs)
 bench/
 evaluation_results/
 *.log
+
+# Note: initial_experiments/ is committed (original research)
+# Note: evaluation_testing/ is committed (original benchmark data)
 
 # IDE
 .vscode/
