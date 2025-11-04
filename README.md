@@ -256,7 +256,7 @@ aTSR/
 ## 📚 Documentation
 
 - **[CLAUDE.md](CLAUDE.md)** - Complete architecture, competitive analysis, tool manifest
-- **[.claude/skills/](. claude/skills/)** - Individual skill documentation
+- **[.claude/skills/](.claude/skills/)** - Individual skill documentation
 - **[evaluation_testing/v2_results/](evaluation_testing/v2_results/)** - Original experiment analysis
 
 ---
