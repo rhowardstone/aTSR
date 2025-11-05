@@ -275,8 +275,8 @@ for BENCH_DIR in "$BENCHMARK_DIR"/bench*; do
     
     # Process each configuration
     for REPO in schedule mistune click; do
-        for MODEL in sonnet-4-5 opus-4-1; do
-            for STRATEGY in refine base; do
+        for MODEL in sonnet-4-5; do
+            for STRATEGY in refine base obra; do
                 CONFIG_NAME="${MODEL}_${STRATEGY}"
                 WORKSPACE="$RESULTS_DIR/$REPO/${CONFIG_NAME}/workspace"
                 

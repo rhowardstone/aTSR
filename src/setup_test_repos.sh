@@ -399,6 +399,21 @@ create_reduced_version "click" "$REPOS_DIR/click" "$REDUCED_DIR/click" "click"
 setup_venv "$REDUCED_DIR/click" "click"
 
 echo ""
+echo -e "${GREEN}=== Installing obra/superpowers TDD Skill ===${NC}"
+echo "This skill will be used for the 'obra' benchmark strategy"
+echo ""
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Run setup_obra.sh in local mode (non-interactive)
+if bash "$SCRIPT_DIR/setup_obra.sh" local <<< "y" 2>&1; then
+    echo -e "${GREEN}✓ obra/superpowers TDD skill installed${NC}"
+else
+    echo -e "${YELLOW}Warning: Failed to install obra skill. You may need to install it manually.${NC}"
+fi
+
+echo ""
 echo -e "${GREEN}=== Setup Complete ===${NC}"
 echo ""
 echo -e "${BLUE}Reproducible versions used (latest as of Sep 30, 2025):${NC}"

@@ -120,7 +120,7 @@ We compare **3 approaches** on the same codebases:
 
 1. **aTSR Skills (refine)**: Our complete skill system with batch analysis (`/refine-tests`)
 2. **Baseline (base)**: Simple prompt asking to improve tests
-3. **Incremental**: Step-by-step approach, one test at a time
+3. **obra/superpowers (obra)**: TDD-based approach using obra's test-driven-development skill
 
 ### Test Repositories
 
@@ -133,11 +133,11 @@ We use 3 real-world Python projects:
 ### How It Works
 
 ```bash
-# 1. Set up test repos (downloads, prepares, creates isolated venvs)
+# 1. Set up test repos (downloads, prepares, creates isolated venvs, installs obra skill)
 bash src/setup_test_repos.sh examples
 
-# 2. Create benchmark copies (6 configurations × 3 repos = 18 runs)
-#    Configurations: 2 models × 3 strategies (refine, base, incremental)
+# 2. Create benchmark copies and run (3 strategies × 3 repos × 3 repeats = 27 runs)
+#    Strategies: refine (aTSR), base (baseline), obra (obra/superpowers TDD)
 for n in 1 2 3; do
   bash src/create_benchmark.sh examples/repos_reduced/ bench/bench$n/
   bash src/run_benchmark.sh bench/bench$n/
@@ -165,11 +165,11 @@ python src/Create_visualization.py evaluation_results/summary.json results.png
    - Reproducible test environments
    - Easy cleanup and recreation
 
-✅ **obra Integration**: obra/superpowers TDD skill can now be installed via `src/setup_obra.sh`. Note that:
-   - obra TDD is designed for **NEW feature development** (test-first)
-   - aTSR is designed for **EXISTING codebase improvement** (coverage-driven)
-   - These are **complementary** approaches, not competing ones
-   - For comparison of test improvement strategies, we added an **incremental** strategy to benchmarks
+✅ **obra Integration**: obra/superpowers TDD skill is now integrated into benchmarks:
+   - Automatically installed during `setup_test_repos.sh`
+   - Used as the 3rd benchmark strategy to compare TDD-based test improvement
+   - While obra TDD is designed for NEW features, we test it for adding tests to existing code
+   - Provides direct comparison: aTSR (batch) vs baseline (simple prompt) vs obra (TDD approach)
 
 ---
 

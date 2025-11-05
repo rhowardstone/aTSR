@@ -34,6 +34,9 @@ fi
 # Create skills directory if it doesn't exist
 mkdir -p "$INSTALL_DIR"
 
+# Save absolute path before changing directories
+INSTALL_DIR_ABS="$(cd "$INSTALL_DIR" && pwd)"
+
 # Create a temporary directory for download
 TEMP_DIR=$(mktemp -d)
 echo -e "${YELLOW}Using temporary directory: $TEMP_DIR${NC}"
@@ -65,7 +68,7 @@ fi
 
 # Copy the TDD skill
 echo -e "${BLUE}Installing test-driven-development skill...${NC}"
-TARGET_DIR="$(cd "$INSTALL_DIR" && pwd)/$TDD_SKILL"
+TARGET_DIR="$INSTALL_DIR_ABS/$TDD_SKILL"
 
 if [ -d "$TARGET_DIR" ]; then
     echo -e "${YELLOW}Warning: Skill already exists at $TARGET_DIR${NC}"

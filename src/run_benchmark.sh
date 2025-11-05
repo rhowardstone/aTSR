@@ -75,7 +75,6 @@ BENCHMARK_DIR="$(cd "$BENCHMARK_DIR" && pwd)"
 # Model configurations
 # Based on Claude documentation, using full model names
 SONNET_MODEL="claude-sonnet-4-5-20250929"  # Latest Sonnet 4.5
-OPUS_MODEL="claude-opus-4-1-20250805"      # Latest Opus 4.1
 
 # Create results directory
 RESULTS_DIR="$BENCHMARK_DIR/results_$(date +%Y%m%d_%H%M%S)"
@@ -122,37 +121,38 @@ Start by examining the current test coverage and then write the missing tests.
 EOF
 }
 
-# Create incremental prompt for step-by-step improvement
-create_incremental_prompt() {
+# Create obra prompt for TDD-based test improvement
+create_obra_prompt() {
     cat > "$1" <<'EOF'
-# Test Suite Improvement - Incremental Approach
+# Test Suite Improvement - TDD Approach
 
-Your goal is to improve test coverage step-by-step, one test at a time.
+Your goal is to improve test coverage using test-driven development principles.
 
 ## Approach:
-Work incrementally through the codebase, improving one small piece at a time.
+Use test-driven development to systematically add missing tests for existing code.
 
-## Process for each iteration:
-1. Run tests and check coverage
-2. Identify ONE specific gap (a single function or small feature)
-3. Write ONE test to cover that gap
-4. Run tests to verify it passes
-5. Repeat
+## Process:
+1. Analyze the codebase to identify functions/features lacking tests
+2. For each untested feature:
+   - Write a test for the behavior FIRST
+   - Verify the existing code passes the test
+   - If it doesn't pass, the test reveals a bug - fix it
+   - Move to the next untested feature
 
-## Guidelines:
-- Focus on ONE test at a time
-- After each test, verify coverage improved
-- Start with the most critical/frequently-used code
-- Don't batch multiple tests - add them one by one
-- Each test should be simple and focused
+## TDD Principles to Apply:
+- Write tests that clearly specify expected behavior
+- Start with the most important/critical functionality
+- Each test should be focused and test one thing
+- Follow RED-GREEN-REFACTOR when fixing bugs found
+- Ensure all tests are meaningful and would catch real issues
 
-## Important:
-- Take small steps - one test per iteration
-- Verify each test works before moving to the next
-- Prioritize quality over speed
-- Build coverage gradually and systematically
+## Focus Areas:
+- Functions with no test coverage
+- Edge cases and boundary conditions
+- Error handling paths
+- Integration between components
 
-This incremental approach ensures each test is properly validated before moving forward.
+Use test-driven development discipline to create a comprehensive, high-quality test suite.
 EOF
 }
 
@@ -196,9 +196,9 @@ run_test_configuration() {
     if [ "$STRATEGY" = "refine" ]; then
         # Use the refine-tests command
         PROMPT="/refine-tests auto"
-    elif [ "$STRATEGY" = "incremental" ]; then
-        # Use incremental prompt
-        create_incremental_prompt "$WORK_DIR/test_prompt.txt"
+    elif [ "$STRATEGY" = "obra" ]; then
+        # Use obra TDD prompt
+        create_obra_prompt "$WORK_DIR/test_prompt.txt"
         PROMPT="$(cat "$WORK_DIR/test_prompt.txt")"
     else
         # Use base prompt
@@ -309,10 +309,7 @@ run_repository_tests() {
     local CONFIGS=(
         "test_sonnet-4-5_refine:$SONNET_MODEL:sonnet-4-5:refine"
         "test_sonnet-4-5_base:$SONNET_MODEL:sonnet-4-5:base"
-        "test_sonnet-4-5_incremental:$SONNET_MODEL:sonnet-4-5:incremental"
-        "test_opus-4-1_refine:$OPUS_MODEL:opus-4-1:refine"
-        "test_opus-4-1_base:$OPUS_MODEL:opus-4-1:base"
-        "test_opus-4-1_incremental:$OPUS_MODEL:opus-4-1:incremental"
+        "test_sonnet-4-5_obra:$SONNET_MODEL:sonnet-4-5:obra"
     )
     
     local SUCCESS_COUNT=0
@@ -416,9 +413,8 @@ Generated: $(date)
 ## Configuration
 - Benchmark Directory: $BENCHMARK_DIR
 - Timeout per test: $TIMEOUT_MINUTES minutes
-- Models tested:
+- Model tested:
   - Sonnet 4.5: $SONNET_MODEL
-  - Opus 4.1: $OPUS_MODEL
 
 ## Results Summary
 
@@ -428,7 +424,7 @@ EOF
     
     # Add results for each test
     for REPO in "${REPOS[@]}"; do
-        for CONFIG in "sonnet-4-5:refine" "sonnet-4-5:base" "sonnet-4-5:incremental" "opus-4-1:refine" "opus-4-1:base" "opus-4-1:incremental"; do
+        for CONFIG in "sonnet-4-5:refine" "sonnet-4-5:base" "sonnet-4-5:obra"; do
             IFS=':' read -r MODEL STRATEGY <<< "$CONFIG"
             
             RESULT_DIR="$RESULTS_DIR/$REPO/${MODEL}_${STRATEGY}"
@@ -471,9 +467,12 @@ Individual test logs can be found in the respective subdirectories:
 This benchmark compares three approaches:
 1. **Refine Strategy**: Uses the sophisticated /refine-tests command with batch analysis (aTSR)
 2. **Base Strategy**: Simple prompt asking to improve test coverage (baseline)
-3. **Incremental Strategy**: Step-by-step approach, one test at a time (incremental)
+3. **Obra Strategy**: Test-driven development approach using obra/superpowers TDD skill
 
-The goal is to measure the effectiveness of batch analysis (refine) versus simple prompts (base) versus incremental improvement (incremental).
+The goal is to measure the effectiveness of:
+- Batch analysis (aTSR refine)
+- Simple prompts (baseline)
+- TDD-based test improvement (obra/superpowers)
 EOF
     
     log ""

@@ -51,11 +51,14 @@ We combine **automated test creation** with **systematic test refinement** using
 We benchmark 3 test improvement strategies:
 1. **refine (aTSR)**: Batch analysis with `/refine-tests` skill system
 2. **base (Baseline)**: Simple prompt asking to improve tests
-3. **incremental**: Step-by-step approach, one test at a time
+3. **obra**: TDD-based test improvement using obra/superpowers test-driven-development skill
 
-**Note on obra TDD**: The test-driven-development skill is available via `src/setup_obra.sh`, but it's designed for **NEW feature development** (test-first), not test suite improvement. aTSR and obra TDD are **complementary**, not competing:
-- obra TDD: Best for NEW features (test-first RED-GREEN-REFACTOR)
-- aTSR: Best for EXISTING codebases (batch analysis, coverage-driven)
+**Comparing Approaches:**
+- **aTSR (refine)**: Analyzes entire codebase upfront, generates comprehensive test plan, batch implementation
+- **Baseline (base)**: Simple prompt with no specialized methodology
+- **obra**: Applies TDD principles (test-first thinking) to adding tests for existing code
+
+While obra TDD is designed for NEW feature development, we benchmark whether TDD principles are effective for the test improvement use case. The obra skill is automatically installed during `setup_test_repos.sh` and invoked with a TDD-focused prompt for test improvement.
 
 Metrics:
 - Coverage % achieved
@@ -245,8 +248,8 @@ description: Use when [specific triggering conditions] - [what it does, third pe
 - ✅ Skills created following obra patterns
 - ✅ Benchmarking infrastructure (setup, run, evaluate, visualize)
 - ✅ Virtual environment isolation per repo (no dependency conflicts)
-- ✅ obra/superpowers integration script (`src/setup_obra.sh`)
-- ✅ Incremental strategy for batch vs step-by-step comparison
+- ✅ obra/superpowers TDD skill integration (automatically installed and benchmarked)
+- ✅ Benchmark configuration: 3 strategies (refine, base, obra) × 1 model (sonnet-4.5) × 3 repos × 3 repeats = 27 runs
 - ✅ Documentation updated (CLAUDE.md, README.md)
 
 ### In Progress
@@ -254,8 +257,8 @@ description: Use when [specific triggering conditions] - [what it does, third pe
 - 🔄 Skills testing with subagents
 
 ### TODO
-- ⏳ Complete benchmark runs (3 strategies × 2 models × 3 repos = 18 runs)
-- ⏳ Analysis of batch (aTSR) vs incremental approaches
+- ⏳ Complete benchmark runs (3 strategies × 1 model × 3 repos × 3 repeats = 27 runs)
+- ⏳ Analysis comparing aTSR (batch) vs baseline vs obra (TDD) approaches
 - ⏳ Additional language support (Go, Rust, Ruby)
 
 ---
@@ -264,13 +267,21 @@ description: Use when [specific triggering conditions] - [what it does, third pe
 
 ### Key Decisions Made
 
-**2025-11-05: Virtual environment isolation and benchmark improvements**
+**2025-11-05 (Update): Corrected benchmark configuration**
+- REMOVED "incremental" strategy (was a hallucination from previous session)
+- ADDED obra/superpowers TDD skill as the 3rd benchmark strategy
+- Fixed setup_obra.sh bug (absolute path issue)
+- Integrated obra installation into setup_test_repos.sh (automatic)
+- Removed opus-4.1 model (focusing on sonnet-4.5 only)
+- Final configuration: 3 strategies (refine, base, obra) × 1 model × 3 repos × 3 repeats = 27 runs
+- Updated all scripts (create_benchmark.sh, run_benchmark.sh, evaluate_all.sh) to use correct strategies
+- Updated documentation to reflect correct benchmark setup
+
+**2025-11-05 (Initial): Virtual environment isolation and benchmark improvements**
 - Added isolated venv per test repo to prevent dependency conflicts
 - Each repo gets `.venv/` during setup, activated during benchmarks
-- Integrated obra/superpowers TDD skill (for reference/complementary use)
-- Added "incremental" strategy to compare batch vs step-by-step approaches
-- Now benchmarking 3 strategies: refine (aTSR batch), base (baseline), incremental (step-by-step)
-- Updated all scripts and documentation to reflect improvements
+- Created obra/superpowers integration script (`src/setup_obra.sh`)
+- Updated all scripts and documentation
 
 **2025-11-04: Expanded from refinement-only to complete lifecycle**
 - Initially planned only test refinement

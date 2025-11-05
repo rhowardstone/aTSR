@@ -14,14 +14,11 @@ show_usage() {
     echo "This will create in the output directory:"
     echo "  <prefix>_sonnet-4-5_refine/"
     echo "  <prefix>_sonnet-4-5_base/"
-    echo "  <prefix>_sonnet-4-5_incremental/"
-    echo "  <prefix>_opus-4-1_refine/"
-    echo "  <prefix>_opus-4-1_base/"
-    echo "  <prefix>_opus-4-1_incremental/"
+    echo "  <prefix>_sonnet-4-5_obra/"
     echo ""
     echo "Example:"
     echo "  $0 ./repos_reduced /path/to/output mytest"
-    echo "  Creates: mytest_sonnet-4-5_refine, mytest_sonnet-4-5_base, etc."
+    echo "  Creates: mytest_sonnet-4-5_refine, mytest_sonnet-4-5_base, mytest_sonnet-4-5_obra"
     exit 1
 }
 
@@ -51,8 +48,8 @@ if [ ! -d "$OUTPUT_DIR" ]; then
 fi
 
 # Define the target configurations
-MODELS=("sonnet-4-5" "opus-4-1")
-STRATEGIES=("refine" "base" "incremental")
+MODELS=("sonnet-4-5")
+STRATEGIES=("refine" "base" "obra")
 
 # Colors for output (check if terminal supports colors)
 if [ -t 1 ]; then
