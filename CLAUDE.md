@@ -2,7 +2,7 @@
 
 **Project Memory and Architecture Documentation**
 
-Last updated: 2025-11-04
+Last updated: 2025-11-05
 
 ---
 
@@ -48,10 +48,14 @@ We combine **automated test creation** with **systematic test refinement** using
 
 ### Benchmark Positioning
 
-We'll benchmark against:
-1. **aTSR skills** (our complete solution)
-2. **obra TDD skill** (manual test-first development)
-3. **Baseline** (no skills, just prompts)
+We benchmark 3 test improvement strategies:
+1. **refine (aTSR)**: Batch analysis with `/refine-tests` skill system
+2. **base (Baseline)**: Simple prompt asking to improve tests
+3. **incremental**: Step-by-step approach, one test at a time
+
+**Note on obra TDD**: The test-driven-development skill is available via `src/setup_obra.sh`, but it's designed for **NEW feature development** (test-first), not test suite improvement. aTSR and obra TDD are **complementary**, not competing:
+- obra TDD: Best for NEW features (test-first RED-GREEN-REFACTOR)
+- aTSR: Best for EXISTING codebases (batch analysis, coverage-driven)
 
 Metrics:
 - Coverage % achieved
@@ -236,24 +240,37 @@ description: Use when [specific triggering conditions] - [what it does, third pe
 ### Completed
 - ✅ Competitive analysis
 - ✅ Architecture design
-- ✅ Directory structure planned
+- ✅ Directory structure implemented
 - ✅ Tool manifest defined
+- ✅ Skills created following obra patterns
+- ✅ Benchmarking infrastructure (setup, run, evaluate, visualize)
+- ✅ Virtual environment isolation per repo (no dependency conflicts)
+- ✅ obra/superpowers integration script (`src/setup_obra.sh`)
+- ✅ Incremental strategy for batch vs step-by-step comparison
+- ✅ Documentation updated (CLAUDE.md, README.md)
 
 ### In Progress
-- 🔄 Creating CLAUDE.md (this file)
+- 🔄 CLI tools implementation (lib/atsr-tools/)
+- 🔄 Skills testing with subagents
 
 ### TODO
-- ⏳ Build CLI tools in lib/atsr-tools/
-- ⏳ Create skills following obra patterns
-- ⏳ Test skills with subagent validation
-- ⏳ Update README.md
-- ⏳ Benchmark against obra and baseline
+- ⏳ Complete benchmark runs (3 strategies × 2 models × 3 repos = 18 runs)
+- ⏳ Analysis of batch (aTSR) vs incremental approaches
+- ⏳ Additional language support (Go, Rust, Ruby)
 
 ---
 
 ## Development Notes
 
 ### Key Decisions Made
+
+**2025-11-05: Virtual environment isolation and benchmark improvements**
+- Added isolated venv per test repo to prevent dependency conflicts
+- Each repo gets `.venv/` during setup, activated during benchmarks
+- Integrated obra/superpowers TDD skill (for reference/complementary use)
+- Added "incremental" strategy to compare batch vs step-by-step approaches
+- Now benchmarking 3 strategies: refine (aTSR batch), base (baseline), incremental (step-by-step)
+- Updated all scripts and documentation to reflect improvements
 
 **2025-11-04: Expanded from refinement-only to complete lifecycle**
 - Initially planned only test refinement

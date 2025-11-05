@@ -14,8 +14,10 @@ show_usage() {
     echo "This will create in the output directory:"
     echo "  <prefix>_sonnet-4-5_refine/"
     echo "  <prefix>_sonnet-4-5_base/"
+    echo "  <prefix>_sonnet-4-5_incremental/"
     echo "  <prefix>_opus-4-1_refine/"
     echo "  <prefix>_opus-4-1_base/"
+    echo "  <prefix>_opus-4-1_incremental/"
     echo ""
     echo "Example:"
     echo "  $0 ./repos_reduced /path/to/output mytest"
@@ -48,9 +50,9 @@ if [ ! -d "$OUTPUT_DIR" ]; then
     mkdir -p "$OUTPUT_DIR"
 fi
 
-# Define the four target configurations
+# Define the target configurations
 MODELS=("sonnet-4-5" "opus-4-1")
-STRATEGIES=("refine" "base")
+STRATEGIES=("refine" "base" "incremental")
 
 # Colors for output (check if terminal supports colors)
 if [ -t 1 ]; then
@@ -96,7 +98,7 @@ for MODEL in "${MODELS[@]}"; do
             }
         fi
         
-        # Copy the entire directory recursively
+        # Copy the entire directory recursively (including .venv for isolation)
         if cp -r "$INPUT_DIR" "$TARGET_PATH" 2>/dev/null; then
             # Try to create metadata file, but don't fail if we can't
             if [ -d "$TARGET_PATH" ]; then
@@ -105,6 +107,7 @@ model: $MODEL
 strategy: $STRATEGY
 source: $INPUT_DIR
 created: $(date -u +"%Y-%m-%d %H:%M:%S UTC" 2>/dev/null || echo "unknown")
+venv_included: yes
 EOF
             fi
             
