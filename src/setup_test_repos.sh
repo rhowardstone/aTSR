@@ -86,11 +86,8 @@ if ! command_exists git; then
     exit 1
 fi
 
-# Install testing dependencies
-echo -e "${YELLOW}Installing test dependencies...${NC}"
-pip install -q pytest pytest-cov coverage 2>/dev/null || {
-    echo -e "${RED}Warning: Some packages may already be installed${NC}"
-}
+# NOTE: Dependencies will be installed in per-repo venvs (see below)
+echo -e "${YELLOW}Test dependencies will be installed in isolated venvs for each repo${NC}"
 
 # Function to clone and checkout specific version
 clone_and_checkout() {
@@ -98,11 +95,11 @@ clone_and_checkout() {
     local repo_name=$2
     local tag=$3
     local commit=$4
-    
+
     echo -e "${BLUE}Cloning $repo_name and checking out $tag...${NC}"
     git clone "$repo_url" --quiet
     cd "$repo_name"
-    
+
     # Try to checkout by tag first, fall back to commit if tag doesn't exist
     if git rev-parse "$tag" >/dev/null 2>&1; then
         git checkout "$tag" --quiet 2>/dev/null
@@ -111,15 +108,56 @@ clone_and_checkout() {
         git checkout "$commit" --quiet 2>/dev/null
         echo "  Checked out commit: $commit"
     fi
-    
+
     # Verify we're at the expected commit
     local current_commit=$(git rev-parse --short HEAD)
     echo "  Current commit: $current_commit"
-    
+
     cd ..
 }
 
-# Function to analyze repository (unchanged from original)
+# Function to create and setup virtual environment
+setup_venv() {
+    local repo_path=$1
+    local repo_name=$2
+
+    echo -e "${YELLOW}Creating isolated virtual environment for $repo_name...${NC}"
+    cd "$repo_path"
+
+    # Create venv
+    python3 -m venv .venv
+
+    # Activate venv
+    source .venv/bin/activate
+
+    # Upgrade pip to avoid warnings
+    pip install --upgrade pip -q 2>/dev/null
+
+    # Install testing dependencies
+    echo "  Installing pytest, pytest-cov, coverage..."
+    pip install -q pytest pytest-cov coverage 2>/dev/null || {
+        echo -e "${YELLOW}  Warning: Some packages may have failed to install${NC}"
+    }
+
+    # Try to install the package itself
+    if [ -f "setup.py" ] || [ -f "pyproject.toml" ]; then
+        echo "  Installing $repo_name package..."
+        pip install -e . -q 2>/dev/null || {
+            pip install -r requirements.txt -q 2>/dev/null || {
+                echo -e "${YELLOW}  Warning: Failed to install $repo_name dependencies${NC}"
+            }
+        }
+    fi
+
+    echo -e "  ${GREEN}✓ Virtual environment ready at $repo_path/.venv${NC}"
+
+    # Deactivate for now (will be reactivated when needed)
+    deactivate
+
+    cd "$OUTPUT_DIR"
+}
+
+# Function to analyze repository
 analyze_repo() {
     local repo_name=$1
     local repo_path=$2
@@ -128,14 +166,12 @@ analyze_repo() {
     echo -e "${GREEN}Analyzing $repo_name...${NC}"
     cd "$repo_path"
 
-    # Try to install the package
-    if [ -f "setup.py" ] || [ -f "pyproject.toml" ]; then
-        echo "Installing package..."
-        pip install -e . -q 2>/dev/null || {
-            pip install -r requirements.txt -q 2>/dev/null || {
-                echo -e "${YELLOW}Warning: Failed to install $repo_name dependencies${NC}"
-            }
-        }
+    # Activate venv if it exists
+    if [ -f ".venv/bin/activate" ]; then
+        source .venv/bin/activate
+        echo "  Using isolated venv"
+    else
+        echo -e "${YELLOW}  Warning: No venv found, using system Python${NC}"
     fi
 
     # Find test directory/files
@@ -171,6 +207,11 @@ analyze_repo() {
     python -m pytest $test_target --cov="$module_name" --cov-report=term --tb=no -q 2>&1 | tee "$OUTPUT_DIR/${repo_name}_coverage_full.txt" || {
         echo -e "${YELLOW}Coverage analysis completed with warnings for $repo_name${NC}"
     }
+
+    # Deactivate venv
+    if [ -n "$VIRTUAL_ENV" ]; then
+        deactivate
+    fi
 
     cd "$OUTPUT_DIR"
 }
@@ -305,9 +346,21 @@ with open('test_schedule.py', 'w') as f:
 
     # Run coverage on reduced version
     echo "Analyzing reduced coverage..."
+
+    # Activate venv if it exists
+    if [ -f ".venv/bin/activate" ]; then
+        source .venv/bin/activate
+        echo "  Using isolated venv"
+    fi
+
     python -m pytest $test_target --cov="$module_name" --cov-report=term --tb=no -q 2>&1 | tee "$OUTPUT_DIR/${repo_name}_coverage_reduced.txt" || {
         echo -e "${YELLOW}Reduced coverage analysis completed${NC}"
     }
+
+    # Deactivate venv
+    if [ -n "$VIRTUAL_ENV" ]; then
+        deactivate
+    fi
 
     cd "$OUTPUT_DIR"
 }
@@ -318,8 +371,10 @@ echo "Size: ~2600 LOC, Testing: pytest"
 echo "Version: $MISTUNE_TAG (Latest release)"
 cd "$REPOS_DIR"
 clone_and_checkout "https://github.com/lepture/mistune.git" "mistune" "$MISTUNE_TAG" "$MISTUNE_COMMIT"
+setup_venv "$REPOS_DIR/mistune" "mistune"
 analyze_repo "mistune" "$REPOS_DIR/mistune" "mistune"
 create_reduced_version "mistune" "$REPOS_DIR/mistune" "$REDUCED_DIR/mistune" "mistune"
+setup_venv "$REDUCED_DIR/mistune" "mistune"
 
 echo ""
 echo -e "${GREEN}=== Repository 2: schedule (Job scheduling) ===${NC}"
@@ -327,8 +382,10 @@ echo "Size: ~400 LOC, Testing: pytest"
 echo "Version: $SCHEDULE_TAG (Latest release)"
 cd "$REPOS_DIR"
 clone_and_checkout "https://github.com/dbader/schedule.git" "schedule" "$SCHEDULE_TAG" "$SCHEDULE_COMMIT"
+setup_venv "$REPOS_DIR/schedule" "schedule"
 analyze_repo "schedule" "$REPOS_DIR/schedule" "schedule"
 create_reduced_version "schedule" "$REPOS_DIR/schedule" "$REDUCED_DIR/schedule" "schedule"
+setup_venv "$REDUCED_DIR/schedule" "schedule"
 
 echo ""
 echo -e "${GREEN}=== Repository 3: click (CLI framework) ===${NC}"
@@ -336,8 +393,10 @@ echo "Size: ~8000 LOC, Testing: pytest"
 echo "Version: $CLICK_TAG (Latest release)"
 cd "$REPOS_DIR"
 clone_and_checkout "https://github.com/pallets/click.git" "click" "$CLICK_TAG" "$CLICK_COMMIT"
+setup_venv "$REPOS_DIR/click" "click"
 analyze_repo "click" "$REPOS_DIR/click" "click"
 create_reduced_version "click" "$REPOS_DIR/click" "$REDUCED_DIR/click" "click"
+setup_venv "$REDUCED_DIR/click" "click"
 
 echo ""
 echo -e "${GREEN}=== Setup Complete ===${NC}"
@@ -347,9 +406,13 @@ echo "  mistune: $MISTUNE_TAG (commit: $MISTUNE_COMMIT)"
 echo "  schedule: $SCHEDULE_TAG (commit: $SCHEDULE_COMMIT)"
 echo "  click: $CLICK_TAG (commit: $CLICK_COMMIT)"
 echo ""
+echo -e "${BLUE}Environment isolation:${NC}"
+echo "  Each repository has an isolated virtual environment at .venv/"
+echo "  This ensures no dependency conflicts between repos or runs"
+echo ""
 echo "Repository structure:"
-echo "  Original repos: $REPOS_DIR/"
-echo "  Reduced test repos: $REDUCED_DIR/"
+echo "  Original repos: $REPOS_DIR/ (with .venv/)"
+echo "  Reduced test repos: $REDUCED_DIR/ (with .venv/)"
 echo ""
 echo "Coverage reports saved:"
 ls -la "$OUTPUT_DIR"/*_coverage_*.txt 2>/dev/null || echo "  No coverage reports generated"

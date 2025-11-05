@@ -122,6 +122,40 @@ Start by examining the current test coverage and then write the missing tests.
 EOF
 }
 
+# Create incremental prompt for step-by-step improvement
+create_incremental_prompt() {
+    cat > "$1" <<'EOF'
+# Test Suite Improvement - Incremental Approach
+
+Your goal is to improve test coverage step-by-step, one test at a time.
+
+## Approach:
+Work incrementally through the codebase, improving one small piece at a time.
+
+## Process for each iteration:
+1. Run tests and check coverage
+2. Identify ONE specific gap (a single function or small feature)
+3. Write ONE test to cover that gap
+4. Run tests to verify it passes
+5. Repeat
+
+## Guidelines:
+- Focus on ONE test at a time
+- After each test, verify coverage improved
+- Start with the most critical/frequently-used code
+- Don't batch multiple tests - add them one by one
+- Each test should be simple and focused
+
+## Important:
+- Take small steps - one test per iteration
+- Verify each test works before moving to the next
+- Prioritize quality over speed
+- Build coverage gradually and systematically
+
+This incremental approach ensures each test is properly validated before moving forward.
+EOF
+}
+
 # Function to run a single test configuration
 run_test_configuration() {
     local TEST_DIR="$1"
@@ -146,14 +180,26 @@ run_test_configuration() {
     # Copy the test directory to preserve original
     WORK_DIR="$RUN_OUTPUT/workspace"
     cp -r "$TEST_DIR" "$WORK_DIR"
-    
+
     # Change to working directory
     cd "$WORK_DIR"
-    
+
+    # Activate virtual environment if it exists
+    if [ -f ".venv/bin/activate" ]; then
+        log "  Activating isolated virtual environment"
+        source .venv/bin/activate
+    else
+        log "${YELLOW}  Warning: No venv found at $WORK_DIR/.venv, using system Python${NC}"
+    fi
+
     # Prepare the command
     if [ "$STRATEGY" = "refine" ]; then
         # Use the refine-tests command
         PROMPT="/refine-tests auto"
+    elif [ "$STRATEGY" = "incremental" ]; then
+        # Use incremental prompt
+        create_incremental_prompt "$WORK_DIR/test_prompt.txt"
+        PROMPT="$(cat "$WORK_DIR/test_prompt.txt")"
     else
         # Use base prompt
         create_base_prompt "$WORK_DIR/test_prompt.txt"
@@ -196,22 +242,33 @@ run_test_configuration() {
         DURATION=$((END_TIME - START_TIME))
         echo "Duration: ${DURATION} seconds" > "$TIMING_FILE"
         log "  ${GREEN}✓ Completed successfully in ${DURATION} seconds${NC}"
-        
+
         # Extract coverage metrics if available
         extract_metrics "$WORK_DIR" "$RUN_OUTPUT/metrics.json"
-        
+
+        # Deactivate venv
+        if [ -n "$VIRTUAL_ENV" ]; then
+            deactivate
+        fi
+
         return 0
     else
         EXIT_CODE=$?
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))
         echo "Duration: ${DURATION} seconds (timeout/error)" > "$TIMING_FILE"
-        
+
         if [ $EXIT_CODE -eq 124 ]; then
             log "  ${YELLOW}⚠ Timeout after ${TIMEOUT_MINUTES} minutes${NC}"
         else
             log "  ${RED}✗ Failed with exit code $EXIT_CODE${NC}"
         fi
+
+        # Deactivate venv even on failure
+        if [ -n "$VIRTUAL_ENV" ]; then
+            deactivate
+        fi
+
         return $EXIT_CODE
     fi
 }
@@ -252,8 +309,10 @@ run_repository_tests() {
     local CONFIGS=(
         "test_sonnet-4-5_refine:$SONNET_MODEL:sonnet-4-5:refine"
         "test_sonnet-4-5_base:$SONNET_MODEL:sonnet-4-5:base"
+        "test_sonnet-4-5_incremental:$SONNET_MODEL:sonnet-4-5:incremental"
         "test_opus-4-1_refine:$OPUS_MODEL:opus-4-1:refine"
         "test_opus-4-1_base:$OPUS_MODEL:opus-4-1:base"
+        "test_opus-4-1_incremental:$OPUS_MODEL:opus-4-1:incremental"
     )
     
     local SUCCESS_COUNT=0
@@ -369,7 +428,7 @@ EOF
     
     # Add results for each test
     for REPO in "${REPOS[@]}"; do
-        for CONFIG in "sonnet-4-5:refine" "sonnet-4-5:base" "opus-4-1:refine" "opus-4-1:base"; do
+        for CONFIG in "sonnet-4-5:refine" "sonnet-4-5:base" "sonnet-4-5:incremental" "opus-4-1:refine" "opus-4-1:base" "opus-4-1:incremental"; do
             IFS=':' read -r MODEL STRATEGY <<< "$CONFIG"
             
             RESULT_DIR="$RESULTS_DIR/$REPO/${MODEL}_${STRATEGY}"
@@ -409,11 +468,12 @@ Individual test logs can be found in the respective subdirectories:
 
 ## Notes
 
-This benchmark compares two approaches:
-1. **Refine Strategy**: Uses the sophisticated /refine-tests command with multi-phase analysis
-2. **Base Strategy**: Simple prompt asking to improve test coverage
+This benchmark compares three approaches:
+1. **Refine Strategy**: Uses the sophisticated /refine-tests command with batch analysis (aTSR)
+2. **Base Strategy**: Simple prompt asking to improve test coverage (baseline)
+3. **Incremental Strategy**: Step-by-step approach, one test at a time (incremental)
 
-The goal is to measure the effectiveness of the structured refinement approach versus a basic prompt.
+The goal is to measure the effectiveness of batch analysis (refine) versus simple prompts (base) versus incremental improvement (incremental).
 EOF
     
     log ""

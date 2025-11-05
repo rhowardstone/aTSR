@@ -118,9 +118,9 @@ aTSR provides 7 specialized skills:
 
 We compare **3 approaches** on the same codebases:
 
-1. **Baseline**: Simple prompt asking to improve tests
-2. **aTSR Skills**: Our complete skill system (`/refine-tests`)
-3. **[Planned] obra TDD**: Using obra's test-driven-development skill
+1. **aTSR Skills (refine)**: Our complete skill system with batch analysis (`/refine-tests`)
+2. **Baseline (base)**: Simple prompt asking to improve tests
+3. **Incremental**: Step-by-step approach, one test at a time
 
 ### Test Repositories
 
@@ -133,10 +133,11 @@ We use 3 real-world Python projects:
 ### How It Works
 
 ```bash
-# 1. Set up test repos (downloads and prepares them)
+# 1. Set up test repos (downloads, prepares, creates isolated venvs)
 bash src/setup_test_repos.sh examples
 
-# 2. Create benchmark copies (4 configurations × 3 repos = 12 runs)
+# 2. Create benchmark copies (6 configurations × 3 repos = 18 runs)
+#    Configurations: 2 models × 3 strategies (refine, base, incremental)
 for n in 1 2 3; do
   bash src/create_benchmark.sh examples/repos_reduced/ bench/bench$n/
   bash src/run_benchmark.sh bench/bench$n/
@@ -156,11 +157,19 @@ python src/Create_visualization.py evaluation_results/summary.json results.png
 - Tests added (count)
 - Time to completion
 
-### Current Limitations
+### Improvements in Latest Version
 
-⚠️ **Environment Isolation**: Benchmarks run **in series** using the **same Python environment**. Dependencies must be pre-installed globally. Future improvement: Use venvs per run.
+✅ **Environment Isolation**: Each test repository now has its own isolated virtual environment (`.venv/`). This ensures:
+   - No dependency conflicts between repos
+   - Clean isolation between benchmark runs
+   - Reproducible test environments
+   - Easy cleanup and recreation
 
-⚠️ **obra Comparison**: Not yet implemented. Would require adding obra/superpowers skills to the test environment.
+✅ **obra Integration**: obra/superpowers TDD skill can now be installed via `src/setup_obra.sh`. Note that:
+   - obra TDD is designed for **NEW feature development** (test-first)
+   - aTSR is designed for **EXISTING codebase improvement** (coverage-driven)
+   - These are **complementary** approaches, not competing ones
+   - For comparison of test improvement strategies, we added an **incremental** strategy to benchmarks
 
 ---
 
@@ -292,8 +301,10 @@ See the official skill creation guide: [https://github.com/anthropics/skills](ht
 
 ## 📈 Roadmap
 
-- [ ] Complete benchmark comparison (aTSR vs obra vs baseline)
-- [ ] Add venv isolation to benchmarks
+- [x] Add venv isolation to benchmarks
+- [x] Add obra/superpowers TDD skill integration
+- [x] Add incremental strategy for comparison
+- [ ] Complete benchmark runs with all 3 strategies
 - [ ] Integration testing skill
 - [ ] Performance testing patterns
 - [ ] Security testing guidance
