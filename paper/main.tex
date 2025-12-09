@@ -555,7 +555,7 @@ These findings have broader implications for designing agentic AI systems:
 
 \textbf{External validity}: All nine repositories were Python projects; results may not generalize to other languages. Repository selection was convenience-based, not systematic. Bioinformatics repos were chosen to explore domain effects but represent only one specialized domain.
 
-\textbf{Construct validity}: We used coverage and pass rate as proxies for test quality, but these metrics do not capture test readability, maintainability, or assertion quality. A test suite with high coverage but trivial assertions would score well by our metrics.
+\textbf{Construct validity}: We used coverage and pass rate as proxies for test quality, but these metrics do not capture test readability, maintainability, or assertion quality. A test suite with high coverage but trivial assertions would score well by our metrics. \textbf{Critically, session log analysis reveals both V1 and V6 generated tests rely heavily on \texttt{mock.Mock()} rather than real execution.} While this achieves coverage, mock-heavy tests may miss real bugs and create maintenance burden. Future work should evaluate assertion quality and mock usage as explicit metrics.
 
 \textbf{Conclusion validity}: Without statistical significance tests (impossible with n=1), we cannot determine whether observed differences are meaningful. All ``findings'' should be interpreted as preliminary observations requiring replication.
 

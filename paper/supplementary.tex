@@ -279,24 +279,73 @@ Checksum & \$99+/mo & SaaS subscription \\
 \end{tabular}
 \end{table}
 
-\section{Appendix E: Anomaly Analysis}
+\section{Appendix E: Failure Mode Autopsies}
 
-\subsection{click/Opus/base: 10.6M Token Anomaly}
+\subsection{V4 Mutation Testing Trap (click)}
 
-The click repository with Opus model using base strategy consumed 10.6M tokens---4.4$\times$ more than click/Sonnet/base (2.4M tokens). Investigation revealed:
+Session log analysis reveals the agent's descent into the mutation testing trap:
 
-\begin{enumerate}
-\item \textbf{Existing test suite}: click had 190 baseline tests (vs. ~50 for schedule/mistune)
-\item \textbf{Integration complexity}: Each new test required verifying compatibility with existing tests
-\item \textbf{Extended exploration}: Opus model performed more thorough codebase analysis
-\item \textbf{Iterative refinement}: Multiple rounds of test generation and debugging
-\end{enumerate}
+\begin{verbatim}
+Tool 12: TodoWrite - "Install mutmut for mutation testing"
+Tool 13: Bash - pip install mutmut
+Tool 18: Bash - mutmut run --paths-to-mutate=src/click
+         ERROR: "No such option: --paths-to-mutate"
+Tool 19-20: Bash - mutmut --help (reading docs)
+Tool 22: Write - creates setup.cfg with mutmut config
+Tool 23: Bash - timeout 300 mutmut run --simple-output
+         ERROR: "No such option: --simple-output"
+Tool 25-26: Bash - mutmut results / ls .mutmut*
+         OUTPUT: "No mutmut files found"
+\end{verbatim}
 
-This suggests that repositories with large existing test suites may require fundamentally different strategies than greenfield testing.
+When mutmut finally ran, it generated hundreds of unchecked mutants:
 
-\subsection{V4 Catastrophic Failures}
+\begin{verbatim}
+click._compat.x__make_text_stream__mutmut_1: not checked
+click._compat.x__make_text_stream__mutmut_2: not checked
+... (hundreds more)
+\end{verbatim}
 
-In 5/9 repositories, V4 (+Mutations) achieved $\leq$10\% coverage:
+Agent's realization (message 69): \textit{``Let me try a different approach... The mutation run didn't complete properly.''}
+
+\textbf{Root Causes}:
+(1) mutmut 3.x changed CLI options; agent knowledge was outdated.
+(2) No early exit strategy when tooling failed.
+(3) Mutant explosion overwhelmed testing process.
+(4) 10+ tool calls on setup before any test writing.
+
+\subsection{10.6M Token Anomaly (click/Opus/base)}
+
+Token breakdown reveals why Opus used 4.4$\times$ more tokens than Sonnet:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Metric} & \textbf{Sonnet} & \textbf{Opus} \\
+\midrule
+Messages & 47 & 161 \\
+Total tokens & 2.4M & 10.6M \\
+Edit calls & 12 & 25 \\
+Grep calls & 0 & 12 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Activity log shows repeated fix cycles:
+\begin{verbatim}
+Msg 40: "The base class expects source_template..."
+Msg 70: "Let me fix these issues:"
+Msg 80: "Let me debug this test..."
+Msg 120: "Let me fix the LazyFile test issue:"
+\end{verbatim}
+
+\textbf{Root Cause}: Click had 190 existing tests. Opus's thoroughness led to more exploration (12 Grep vs 0), more iterations (25 Edit vs 12), and compounding context costs.
+
+\textbf{Lesson}: Sonnet achieved similar coverage (64\% vs 67\%) with 4.4$\times$ fewer tokens.
+
+\subsection{V4 Catastrophic Failures (All Repos)}
+
+In 5/9 repositories, V4 achieved $\leq$10\% coverage:
 
 \begin{itemize}
 \item \textbf{click}: 0\% (mutation testing never completed)
@@ -306,7 +355,47 @@ In 5/9 repositories, V4 (+Mutations) achieved $\leq$10\% coverage:
 \item \textbf{pyfaidx}: 0\% (file format parsing mutants)
 \end{itemize}
 
-Common failure pattern: The agent enters mutation analysis loops, generating hundreds of mutants, then exhausts context attempting to address each one before writing basic coverage tests.
+Common pattern: Agent enters mutation analysis loops, generating hundreds of mutants, then exhausts context attempting to address each before writing basic coverage tests.
+
+\subsection{Test Quality Comparison: V1 vs V6 (schedule)}
+
+Both variants produced tests with similar quality characteristics:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Metric} & \textbf{V1 (Baseline)} & \textbf{V6 (Minimal)} \\
+\midrule
+Test file size & 856 lines & 610 lines \\
+Test functions & $\sim$40 & $\sim$30 \\
+Coverage & 97\% & 88\% \\
+Tokens used & 4.9M & 6.4M \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{V1 Example} (tests edge cases with real functions):
+\begin{verbatim}
+def test_job_repr_with_args_and_kwargs(self):
+    with mock_datetime(2014, 6, 28, 12, 0):
+        def my_job(arg1, arg2, kwarg1=None):
+            pass
+        job = every(1).hour.do(my_job, "test_arg", 42,
+                               kwarg1="test_kwarg")
+        assert "my_job" in repr(job)
+        assert "'test_arg'" in repr(job)
+\end{verbatim}
+
+\textbf{V6 Example} (simpler, uses mocks):
+\begin{verbatim}
+def test_job_repr_representation(self):
+    with mock_datetime(2014, 6, 28, 12, 0):
+        mock_job = make_mock_job(name="test_job")
+        job = every(1).second.do(mock_job)
+        assert "Every 1 second do test_job()" in repr(job)
+\end{verbatim}
+
+\textbf{Observation}: V1 tests more edge cases but both rely heavily on \texttt{mock.Mock()}. Neither variant produces the ideal ``real execution'' tests that would provide higher confidence. This is a limitation of LLM-generated tests that future work should address.
 
 \section{Appendix F: JobsCoach Bug Reports}
 
