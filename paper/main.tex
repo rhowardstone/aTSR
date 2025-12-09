@@ -48,9 +48,9 @@
 \begin{abstract}
 Large Language Model (LLM) agents can execute software analysis tools to improve test suites, but optimal prompting strategies remain unclear. We present two complementary tools: \textbf{aTSR} (Agentic Test Suite Refinement), a Claude Code slash command orchestrating coverage analysis and mutation testing for backend tests, and \textbf{testScout}, a visual end-to-end testing framework using Set-of-Marks targeting to catch integration bugs that unit tests miss.
 
-In an exploratory study (n=1 per configuration) across nine Python repositories, we compared six prompting strategy variants. Our statistically-supported findings include: (1) the +Mutations variant \textit{catastrophically failed} in 5/9 repositories, achieving $\leq$10\% coverage (sign test, p=0.002); (2) repository characteristics explained 25.5$\times$ more variance in coverage than prompt strategy choice; and (3) a simple baseline prompt matched elaborate multi-phase workflows in most configurations. Token efficiency patterns were mixed across repositories with no statistically significant advantage for minimal prompts.
+In an exploratory study (n=1 per configuration) across nine Python repositories, we compared six prompting strategy variants. Our statistically-supported findings include: (1) the +Mutations variant \textit{catastrophically failed} in 5/9 repositories, achieving $\leq$10\% coverage (sign test, p=0.002); (2) excluding these failures, repository characteristics explained 25.5$\times$ more variance in coverage than prompt strategy choice; and (3) a simple baseline prompt matched elaborate multi-phase workflows in most configurations.
 
-Through the JobsCoach case study, we demonstrate that high backend coverage can still miss critical integration bugs---testScout detected 6 production bugs including a P0 routing failure that unit tests could not catch. Both tools are open-source. \textit{Caveat: Single-run results require replication before drawing definitive conclusions about prompt strategy superiority.}
+Through the JobsCoach case study, we demonstrate that high backend coverage can still miss critical integration bugs---testScout detected 6 production bugs including a P0 routing failure that unit tests could not catch. Both tools are open-source. \textit{Caveats: (1) Single-run results require replication. (2) Session logs reveal generated tests rely heavily on mocking, raising quality concerns beyond coverage metrics.}
 \end{abstract}
 
 %%
@@ -99,7 +99,7 @@ Software engineers have developed sophisticated tools for analyzing and improvin
 
 Modern agentic LLMs can leverage these tools, but typically only when directed. This raises our central research question: \textbf{Does providing detailed methodological guidance---incorporating coverage analysis, mutation testing, and expert heuristics---improve LLM-based test generation, or does it introduce unnecessary overhead and potential failure modes?}
 
-We hypothesized that structured workflows would outperform simple prompts. Our exploratory experiments reveal a more nuanced picture: \textbf{repository characteristics dominated prompt strategy effects by a factor of 25.5$\times$} in variance decomposition analysis. Critically, the +Mutations variant---which incorporates mutation testing feedback---catastrophically failed in 5/9 repositories, achieving $\leq$10\% coverage (sign test, p=0.002). Token efficiency patterns were mixed with no statistically significant advantage for minimal prompts.
+We hypothesized that structured workflows would outperform simple prompts. Our exploratory experiments reveal a more nuanced picture: \textbf{repository characteristics appeared to dominate prompt strategy effects by a factor of 25.5$\times$} in variance decomposition analysis (excluding catastrophic failures). Critically, the +Mutations variant---which incorporates mutation testing feedback---catastrophically failed in 5/9 repositories, achieving $\leq$10\% coverage (sign test, p=0.002). Token efficiency patterns were mixed with no statistically significant advantage for minimal prompts.
 
 However, even achieving high backend coverage left critical bugs undetected. During development of JobsCoach (a job search application), we encountered 6 production bugs---including a P0 routing failure---despite strong test coverage. This motivated our second contribution: testScout, which provides visual E2E testing to catch integration bugs that unit tests structurally cannot detect.
 
@@ -136,12 +136,15 @@ Our exploratory study (n=1 per configuration) yielded statistically-supported fi
 \toprule
 \textbf{Finding} & \textbf{Statistic} & \textbf{p-value} & \textbf{Interpretation} \\
 \midrule
-V4 $<$ V1 coverage & 9/9 repos & 0.002 & Mutation testing \textit{hurts} \\
+V4 $<$ V1 coverage & 9/9 repos & 0.002 & Mutation testing \textit{may hurt}$^*$ \\
 Repo variance & 25.5$\times$ & --- & Repo $>>$ prompt effect \\
 V6 token efficiency & 2/6 repos & 0.89 & \textit{Not} significant \\
 Bio vs general & 60\% vs 83\% & 0.19 & \textit{Not} significant \\
 \bottomrule
 \end{tabular}
+
+\vspace{1mm}
+\noindent{\footnotesize $^*$Requires replication; pattern is statistically robust but effect magnitude may vary.}
 \end{table}
 
 \vspace{1em}
@@ -150,7 +153,8 @@ Bio vs general & 60\% vs 83\% & 0.19 & \textit{Not} significant \\
 \textbf{1. Start simple.} A 15-line prompt achieved the same coverage as 80-line multi-phase workflows. Complexity doesn't guarantee improvement. \\[0.3em]
 \textbf{2. Avoid mutation testing for exploration.} V4 failed catastrophically in 56\% of repos (p=0.002). Use mutation testing only after achieving baseline coverage. \\[0.3em]
 \textbf{3. Know your codebase.} Repository characteristics explained 87\% of variance---25$\times$ more than prompt choice. Adapt strategy to codebase, not vice versa. \\[0.3em]
-\textbf{4. E2E tests catch what unit tests miss.} JobsCoach's P0 routing bug was undetectable by unit tests despite high coverage.
+\textbf{4. E2E tests catch what unit tests miss.} JobsCoach's P0 routing bug was undetectable by unit tests despite high coverage. \\[0.3em]
+\textbf{5. Inspect test quality, not just coverage.} Generated tests relied heavily on mocking. High coverage with mocks may not catch real bugs---manual review remains essential.
 }}
 
 %% ============================================================================
@@ -507,13 +511,16 @@ click & 79\% & 0\% & $-$79 pts & \textcolor{red}{Catastrophic} \\
 python-box & 93\% & 1\% & $-$92 pts & \textcolor{red}{Catastrophic} \\
 dnaapler & 35\% & 0\% & $-$35 pts & \textcolor{red}{Catastrophic} \\
 fastqe & 95\% & 0\% & $-$95 pts & \textcolor{red}{Catastrophic} \\
-pyfaidx & 50\% & 0\% & $-$50 pts & \textcolor{red}{Catastrophic} \\
+pyfaidx & 50\% & 0\% & $-$50 pts & \textcolor{red}{Catastrophic}$^\dagger$ \\
 schedule & 97\% & 56\% & $-$41 pts & Degraded \\
 mistune & 85\% & 46\% & $-$39 pts & Degraded \\
 colorama & 77\% & 67\% & $-$10 pts & Degraded \\
 boltons & 67\% & 65\% & $-$2 pts & Degraded \\
 \bottomrule
 \end{tabular}
+
+\vspace{1mm}
+\noindent{\footnotesize $^\dagger$Catastrophic = final coverage $\leq$10\%. Degraded = coverage decreased but $>$10\%.}
 \end{center}
 
 \noindent Explanations include:
@@ -575,6 +582,8 @@ Repository: \url{https://github.com/rhowardstone/aTSR}
 }}
 
 \subsection{testScout Evaluation}
+
+\textbf{Bridging aTSR and testScout}: The aTSR experiments above focus on backend test generation, where we found that simple prompts achieve competitive coverage. However, even perfect line coverage cannot detect integration failures at architectural boundaries. The JobsCoach P0 routing bug occurred at the FastAPI route registration layer---a configuration concern orthogonal to unit test coverage. This gap between coverage metrics (aTSR's domain) and integration correctness motivated testScout's development. Where aTSR improves the \textit{depth} of backend testing, testScout addresses the \textit{breadth} of system-level validation through visual E2E testing.
 
 testScout operates in two modes: \textbf{Discovery Mode} (no API key required) performs element identification and Set-of-Marks overlay generation; \textbf{AI Mode} (requires Gemini/GPT-4V) adds vision-based action execution and autonomous exploration. This graceful degradation enables testing infrastructure validation without API costs.
 
