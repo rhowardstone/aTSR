@@ -363,13 +363,7 @@ While n=1 per configuration limits individual comparisons, patterns across 9 rep
 
 \textbf{Variance Decomposition}: Across 6 general-purpose repositories and 5 variants (excluding V4), between-repository variance was 132 compared to between-variant variance of 5.2---a ratio of 25.5$\times$. Repository characteristics explained 87\% of total variance; prompt strategy explained only 3\%.
 
-\begin{center}
-\begin{tabular}{lrl}
-Repository effects & 87\% & \texttt{[==================================----]} \\
-Prompt strategy & 3\% & \texttt{[=-------------------------------------]} \\
-Unexplained & 10\% & \texttt{[====----------------------------------]} \\
-\end{tabular}
-\end{center}
+Repository characteristics accounted for 87\% of the total variance in coverage outcomes, while prompt strategy choice explained only 3\%. The remaining 10\% was unexplained variance (potentially including LLM non-determinism and measurement noise).
 
 \textbf{Token Efficiency}: Contrary to initial hypotheses, V6 (Minimal) used fewer tokens than V5 (+Both) in only 2/6 repositories. The sign test (p=0.89) and Wilcoxon signed-rank test (p=0.69) found no significant token efficiency advantage for minimal prompts.
 
@@ -390,7 +384,7 @@ Variance decomposition reveals repository characteristics explained \textbf{25.5
 
 \subsection{Why Simpler Prompts Remain Competitive}
 
-No statistically significant token efficiency advantage for minimal prompts (p=0.89), yet simple baselines matched elaborate workflows. Explanations: (1) complex prompts may overload attention, forcing suboptimal execution patterns; (2) frontier models already internalize effective testing practices; (3) each workflow phase can introduce compounding errors.
+Despite our hypothesis that elaborate prompts would improve outcomes, we found no statistically significant token efficiency advantage for minimal prompts (sign test, p=0.89). Yet simple baselines consistently matched the coverage achieved by elaborate multi-phase workflows. Several factors may explain this finding: (1) complex prompts may overload the model's attention, forcing suboptimal execution patterns; (2) frontier models have already internalized effective testing practices from training data; and (3) each additional workflow phase introduces opportunities for compounding errors that offset any methodological benefits.
 
 \subsection{Why Mutations Catastrophically Failed}
 
@@ -442,15 +436,7 @@ Broader implications: (1) start minimal before adding complexity; (2) complex wo
 
 \vspace{0.5em}
 \noindent\fbox{\parbox{0.95\columnwidth}{%
-\textbf{Open Science Statement:} All experimental artifacts are publicly available:
-\begin{itemize}[noitemsep,topsep=0pt,leftmargin=*]
-    \item \textbf{54 configuration metrics}: \texttt{results/phase2/*/metrics.json}
-    \item \textbf{6 prompt variants}: Full text in Appendix A
-    \item \textbf{Statistical analysis code}: Reproducible Python in Appendix C
-    \item \textbf{testScout audit trails}: Screenshots, prompts, decisions
-\end{itemize}
-\vspace{-0.5em}
-Repository: \url{https://github.com/rhowardstone/aTSR}
+\textbf{Open Science Statement:} All experimental artifacts are publicly available at \url{https://github.com/rhowardstone/aTSR}, including: 54 configuration metrics (\texttt{results/phase2/*/metrics.json}), full prompt text for all 6 variants, reproducible statistical analysis code (Python), and testScout audit trails with screenshots, prompts, and decision logs.
 }}
 
 \subsection{testScout Evaluation}

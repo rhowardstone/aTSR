@@ -12,13 +12,11 @@
 
 \maketitle
 
-\section{Appendix A: Prompt Variants}
+\section{Appendix A: Prompt Variant Design}
 
-\textbf{Note}: The prompts shown below are \textit{simplified summaries}. The actual prompts used in experiments were substantially larger (30--80 lines) and included pre-execution shell commands for context gathering. Full prompt text is available at:
+This appendix describes the six prompt variants used in Phase 2 experiments. Each variant was designed to isolate specific components of a comprehensive test refinement workflow, allowing us to measure the marginal contribution of each component.
 
-\begin{center}
-\url{https://github.com/rhowardstone/aTSR/tree/main/src/prompts}
-\end{center}
+\textbf{Important Note}: The prompts shown below are \textit{simplified summaries} intended to convey the key differences between variants. The actual prompts used in our experiments were substantially larger (ranging from 15 to 80 lines) and included pre-execution shell commands that gather context about the repository before the LLM begins its work. The complete prompt text files are available at: \url{https://github.com/rhowardstone/aTSR/tree/main/src/prompts}
 
 \begin{table}[h]
 \centering
@@ -28,25 +26,45 @@
 \toprule
 \textbf{Variant} & \textbf{Lines} & \textbf{Description} \\
 \midrule
-V1: Baseline & 30 & Simple directive to improve coverage. No pre-execution context. \\
-V2: +Context & 40 & Adds pre-execution commands: \texttt{find}, \texttt{wc}, \texttt{ls} to detect language, structure, test locations, code/test ratio. \\
-V3: +Coverage & 60 & V2 + explicit \texttt{coverage.py} workflow with iterative gap-filling loop. \\
-V4: +Mutations & 60 & V2 + explicit \texttt{mutmut} workflow for mutation-guided testing. \\
-V5: +Both & 80 & V2 + three-phase workflow: coverage first, then mutations, then verification. \\
-V6: Minimal & 15 & Pre-execution context only. Directive reduced to: ``Improve coverage to 80\%+.'' \\
+V1: Baseline & 30 & Simple directive to improve coverage. No pre-execution context commands. The agent receives only the instruction to ``improve test coverage'' without any automated codebase analysis. \\
+V2: +Context & 40 & Adds pre-execution shell commands that run before the LLM sees the prompt: \texttt{find} (locate source/test files), \texttt{wc} (count lines of code vs tests), \texttt{ls} (directory structure). This provides the agent with language detection, project layout, and code/test ratio. \\
+V3: +Coverage & 60 & V2's context commands plus explicit instructions to use \texttt{coverage.py} for iterative gap-filling. The prompt specifies a loop: run coverage, identify uncovered lines, write tests targeting those lines, verify improvement. \\
+V4: +Mutations & 60 & V2's context commands plus explicit instructions to use \texttt{mutmut} for mutation-guided testing. The prompt directs the agent to generate mutants, run tests against them, and write new tests to kill surviving mutants. \\
+V5: +Both & 80 & V2's context plus a three-phase workflow: (1) achieve baseline coverage using coverage.py, (2) run mutation testing with mutmut, (3) final verification. This is the most complex prompt variant. \\
+V6: Minimal & 15 & Pre-execution context commands only. The actual directive is reduced to a single sentence: ``Improve test coverage to 80\%+.'' Tests whether context alone is sufficient. \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Phase 1 (Base vs Refine)}: ``Base'' used a simple coverage improvement prompt; ``Refine'' used the full \texttt{/refine-tests} slash command implementing a 6-phase workflow (environment detection, coverage analysis, mutation testing, recommendations, property testing, verification). Full slash command source: \url{https://github.com/rhowardstone/aTSR/tree/main/.claude/commands}
+\subsection{Phase 1: Base vs Refine Comparison}
 
-\section{Appendix B: Complete Metrics}
+Phase 1 compared two fundamentally different approaches:
+
+\textbf{Base Strategy}: A simple, direct prompt asking the agent to ``improve test coverage for this repository.'' No tool-specific instructions, no workflow phases, no pre-execution context gathering. This serves as our control condition---what happens when we give a capable LLM minimal guidance?
+
+\textbf{Refine Strategy}: The full \texttt{/refine-tests} Claude Code slash command, implementing a comprehensive 6-phase workflow:
+\begin{enumerate}
+\item \textbf{Environment Detection}: Automatically identify language, test framework, and project structure
+\item \textbf{Coverage Analysis}: Run coverage tools and identify gaps
+\item \textbf{Mutation Testing}: Generate code mutants and identify weak test assertions
+\item \textbf{Test Recommendations}: Prioritize which tests to write based on coverage gaps and mutation results
+\item \textbf{Property Testing}: Add hypothesis-based property tests where applicable
+\item \textbf{Verification}: Confirm all tests pass and coverage improved
+\end{enumerate}
+
+The full slash command source code is available at: \url{https://github.com/rhowardstone/aTSR/tree/main/.claude/commands}
+
+\section{Appendix B: Complete Experimental Metrics}
+
+This appendix provides the complete raw data from all 66 experimental configurations (12 in Phase 1, 54 in Phase 2). These tables enable independent verification of our statistical analyses and support future meta-analyses.
 
 \subsection{Phase 1: Base vs Refine (12 configurations)}
 
+Phase 1 tested 2 strategies $\times$ 2 models $\times$ 3 repositories = 12 configurations. Each configuration ran exactly once (n=1). The ``reduced coverage'' repositories had tests artificially removed to create coverage gaps of approximately 30-40 percentage points.
+
 \begin{table}[h]
 \centering
-\caption{Phase 1 Complete Results}
+\caption{Phase 1 Complete Results. Cov\% = final line coverage, Pass\% = percentage of generated tests that pass, Tests = total test functions written, Tokens = total API tokens consumed (input + output + cache).}
 \begin{tabular}{llllrrr}
 \hline
 \textbf{Repo} & \textbf{Model} & \textbf{Strategy} & \textbf{Cov\%} & \textbf{Pass\%} & \textbf{Tests} & \textbf{Tokens} \\
@@ -67,14 +85,18 @@ click & Opus & refine & 66 & 95.5 & 298 & 3.3M \\
 \end{tabular}
 \label{tab:phase1-complete}
 
-\small{$^*$Anomaly: Extended exploration cycles integrating with 190 existing baseline tests.}
+\small{$^*$Anomaly: This run encountered extended exploration cycles while attempting to integrate with click's 190 existing baseline tests. The agent spent significant tokens understanding existing test patterns before writing new tests.}
 \end{table}
+
+\textbf{Key Observations}: Base achieved higher or equal coverage in 10/12 configurations while using fewer tokens on average. The refine strategy generated more tests but with lower pass rates, suggesting the complex workflow introduced errors.
 
 \subsection{Phase 2: Six Prompt Variants (54 configurations)}
 
+Phase 2 tested 6 variants $\times$ 9 repositories = 54 configurations. Repositories were grouped into three categories to test generalization across different conditions.
+
 \begin{table}[h]
 \centering
-\caption{Phase 2 Experiment 1: Reduced Coverage Repositories}
+\caption{Phase 2 Experiment 1: Reduced Coverage Repositories. These three popular Python libraries (click, mistune, schedule) had tests artificially removed to create coverage gaps of 30-40 percentage points, simulating a ``coverage improvement'' scenario.}
 \begin{tabular}{llrrrr}
 \hline
 \textbf{Repo} & \textbf{Variant} & \textbf{Cov\%} & \textbf{Pass} & \textbf{Fail} & \textbf{Tokens (M)} \\
@@ -103,9 +125,11 @@ schedule & V6 & 88 & 35 & 0 & 0.9 \\
 \end{tabular}
 \end{table}
 
+\textbf{Notable Results}: V4 (+Mutations) achieved 0\% coverage on click---a complete failure where the agent became trapped in mutation testing setup and never wrote any tests. V6 (Minimal) achieved competitive coverage on schedule (88\%) using only 0.9M tokens, demonstrating that elaborate prompts may be unnecessary.
+
 \begin{table}[h]
 \centering
-\caption{Phase 2 Experiment 2: Low Existing Coverage Repositories}
+\caption{Phase 2 Experiment 2: Low Existing Coverage Repositories. These three Python libraries (python-box, colorama, boltons) had naturally low test coverage without artificial test removal. This tests whether the agent can improve real-world codebases.}
 \begin{tabular}{llrrrr}
 \hline
 \textbf{Repo} & \textbf{Variant} & \textbf{Cov\%} & \textbf{Pass} & \textbf{Fail} & \textbf{Tokens (M)} \\
@@ -134,9 +158,11 @@ boltons & V6 & 70 & 1210 & 7 & 7.4 \\
 \end{tabular}
 \end{table}
 
+\textbf{Notable Results}: python-box showed another V4 catastrophic failure (1\% coverage). All other variants achieved excellent results (93-95\% coverage), demonstrating that LLMs can dramatically improve coverage on real codebases. boltons generated $>$1000 tests per variant---the agent was highly productive on this utility library.
+
 \begin{table}[h]
 \centering
-\caption{Phase 2 Experiment 3: Bioinformatics Repositories}
+\caption{Phase 2 Experiment 3: Bioinformatics Repositories. These three domain-specific Python libraries (dnaapler, fastqe, pyfaidx) test generalization to specialized scientific software with domain-specific concepts and dependencies.}
 \begin{tabular}{llrrrr}
 \hline
 \textbf{Repo} & \textbf{Variant} & \textbf{Cov\%} & \textbf{Pass} & \textbf{Fail} & \textbf{Tokens (M)} \\
@@ -165,46 +191,75 @@ pyfaidx & V6 & 52 & 46 & 14 & 4.5 \\
 \end{tabular}
 \end{table}
 
+\textbf{Notable Results}: Bioinformatics repos showed dramatically higher failure rates. fastqe had V4, V5, and V6 all achieve 0\% coverage---three different prompts failed completely on this emoji-based FASTQ visualization tool. High fail counts (e.g., 15 failed tests for pyfaidx/V1) indicate the agent struggled with domain-specific testing requirements like file format handling and external database dependencies.
+
 \section{Appendix C: Statistical Analysis Code}
+
+This appendix provides the complete Python code used for statistical analysis. All tests are reproducible using standard scipy functions. We chose non-parametric tests (sign test, Mann-Whitney U) because our sample sizes are small and we cannot assume normal distributions.
 
 \begin{verbatim}
 import numpy as np
 from scipy.stats import binomtest, wilcoxon, mannwhitneyu
 
-# V4 underperformed V1 in 9/9 repos
-v4_worse = 9
+# ============================================================
+# TEST 1: Sign test for V4 underperforming V1
+# ============================================================
+# For each repository, we compare V4 coverage to V1 coverage.
+# V4 was worse than V1 in all 9 repositories.
+# Under the null hypothesis (no difference), each repo has 50%
+# chance of V4 being worse. The probability of 9/9 by chance:
+
+v4_worse = 9  # V4 < V1 in all 9 repos
 result = binomtest(v4_worse, 9, p=0.5, alternative='greater')
 print(f"Sign test (V4 < V1): p = {result.pvalue:.4f}")
 # Output: p = 0.0020
 
-# Variance decomposition
-total_var = 151.7
-between_repo_var = 132.0
-between_variant_var = 5.2
-print(f"Ratio: {between_repo_var/between_variant_var:.1f}x")
-# Output: 25.5x
+# ============================================================
+# TEST 2: Variance decomposition (repo vs prompt effects)
+# ============================================================
+# We compute between-group variance for repositories and for
+# prompt variants, then take their ratio.
 
-# Token efficiency V5 vs V6
-v5_tokens = [5.15, 4.89, 4.25, 3.27, 5.83, 7.62]
-v6_tokens = [5.86, 4.92, 0.94, 3.72, 7.32, 7.38]
+total_var = 151.7      # Total variance in coverage outcomes
+between_repo_var = 132.0    # Variance explained by repo
+between_variant_var = 5.2   # Variance explained by prompt
+print(f"Ratio: {between_repo_var/between_variant_var:.1f}x")
+# Output: 25.5x (repos explain 25.5x more variance than prompts)
+
+# ============================================================
+# TEST 3: Token efficiency comparison (V5 vs V6)
+# ============================================================
+# We hypothesized V6 (Minimal) would use fewer tokens than
+# V5 (+Both). Testing on 6 general-purpose repos:
+
+v5_tokens = [5.15, 4.89, 4.25, 3.27, 5.83, 7.62]  # Million tokens
+v6_tokens = [5.86, 4.92, 0.94, 3.72, 7.32, 7.38]  # Million tokens
 v6_wins = sum(v6 < v5 for v6, v5 in zip(v6_tokens, v5_tokens))
+# V6 used fewer tokens in only 2/6 repos
+
 result = binomtest(v6_wins, 6, p=0.5, alternative='greater')
 print(f"Sign test: p = {result.pvalue:.4f}")
-# Output: p = 0.8906 (NOT significant)
+# Output: p = 0.8906 (NOT significant - no evidence V6 is cheaper)
 
-# Domain effects
-general = [79, 85, 97, 93, 77, 67]
-bio = [35, 95, 50]
+# ============================================================
+# TEST 4: Domain effects (bioinformatics vs general)
+# ============================================================
+# Comparing V1 coverage between bio repos and general repos:
+
+general = [79, 85, 97, 93, 77, 67]  # V1 coverage for 6 general repos
+bio = [35, 95, 50]                   # V1 coverage for 3 bio repos
 u_stat, u_p = mannwhitneyu(bio, general, alternative='less')
 print(f"Mann-Whitney U: p = {u_p:.4f}")
-# Output: p = 0.1905 (NOT significant)
+# Output: p = 0.1905 (NOT significant, but low sample size)
 \end{verbatim}
 
 \section{Appendix D: testScout Evaluation Results}
 
+testScout was evaluated in two modes: Discovery Mode (element identification only, no API key required) and AI Mode (vision-model-guided interaction using Gemini 2.5 Pro).
+
 \begin{table}[h]
 \centering
-\caption{testScout Element Discovery Performance}
+\caption{testScout Element Discovery Performance. Each website was tested 3 times; all runs succeeded. Elements = interactive elements discovered (buttons, links, inputs, etc.). Time = end-to-end discovery including page load and JavaScript injection.}
 \begin{tabular}{llrrr}
 \hline
 \textbf{Website} & \textbf{Type} & \textbf{Elements} & \textbf{Time (s)} & \textbf{Success} \\
@@ -219,27 +274,31 @@ TodoMVC React & React App & 12 & $<$5 & \checkmark \\
 \end{tabular}
 \end{table}
 
+The Set-of-Marks approach achieved 100\% element identification reliability across all tested sites. Only 17\% of discovered elements had stable CSS selectors suitable for traditional Selenium/Playwright testing; the remaining 83\% would require fragile XPath or position-based selectors.
+
 \begin{table}[h]
 \centering
-\caption{testScout Cost Comparison}
+\caption{testScout Cost Comparison with competing E2E testing solutions. Costs are per-test estimates based on typical test complexity (2-5 actions per test).}
 \begin{tabular}{lcc}
 \hline
 \textbf{Framework} & \textbf{Cost per Test} & \textbf{Notes} \\
 \hline
-testScout (Gemini) & \$0.01--\$0.05 & Pay-per-use \\
-testScout (OpenAI) & \$0.10--\$0.50 & Pay-per-use \\
-Selenium/Playwright & \$0 & Manual scripting \\
-ZeroStep & \$49--\$249/mo & SaaS subscription \\
-Checksum & \$99+/mo & SaaS subscription \\
+testScout (Gemini) & \$0.01--\$0.05 & Pay-per-use, no subscription \\
+testScout (OpenAI) & \$0.10--\$0.50 & Pay-per-use, GPT-4V pricing \\
+Selenium/Playwright & \$0 & Requires manual script writing \\
+ZeroStep & \$49--\$249/mo & SaaS, AI-assisted selectors \\
+Checksum & \$99+/mo & SaaS, visual regression \\
 \hline
 \end{tabular}
 \end{table}
 
 \section{Appendix E: Failure Mode Autopsies}
 
-\subsection{V4 Mutation Testing Trap (click)}
+This appendix provides detailed analysis of specific failure cases, extracted from Claude Code session logs. Understanding why agents fail is as important as understanding when they succeed.
 
-Session log analysis reveals the agent's descent into the mutation testing trap:
+\subsection{V4 Mutation Testing Trap (click repository)}
+
+The click/V4 configuration achieved 0\% coverage---a complete failure. Session log analysis reveals the agent's descent into what we call the ``mutation testing trap'':
 
 \begin{verbatim}
 Tool 12: TodoWrite - "Install mutmut for mutation testing"
@@ -254,40 +313,42 @@ Tool 25-26: Bash - mutmut results / ls .mutmut*
          OUTPUT: "No mutmut files found"
 \end{verbatim}
 
-When mutmut finally ran, it generated hundreds of unchecked mutants:
+The agent spent its first 26 tool calls (approximately 2M tokens) attempting to configure mutmut, encountering repeated failures due to outdated knowledge of the mutmut CLI. When mutmut finally ran, it generated hundreds of unchecked mutants:
 
 \begin{verbatim}
 click._compat.x__make_text_stream__mutmut_1: not checked
 click._compat.x__make_text_stream__mutmut_2: not checked
-... (hundreds more)
+... (hundreds more mutants listed as "not checked")
 \end{verbatim}
 
-Agent's realization (message 69): \textit{``Let me try a different approach... The mutation run didn't complete properly.''}
+By message 69, the agent recognized the problem: \textit{``Let me try a different approach... The mutation run didn't complete properly.''} But by then, context was exhausted and no tests had been written.
 
-\textbf{Root Causes}:
-(1) mutmut 3.x changed CLI options; agent knowledge was outdated.
-(2) No early exit strategy when tooling failed.
-(3) Mutant explosion overwhelmed testing process.
-(4) 10+ tool calls on setup before any test writing.
+\textbf{Root Causes Identified}:
+\begin{enumerate}
+\item \textbf{Outdated tool knowledge}: mutmut 3.x changed its CLI options; the agent's training data contained mutmut 2.x syntax
+\item \textbf{No early exit strategy}: The prompt did not specify fallback behavior when tooling fails
+\item \textbf{Mutant explosion}: Click's codebase generated hundreds of mutants, overwhelming the agent's planning capacity
+\item \textbf{Misallocated effort}: 10+ tool calls on setup before any test writing---a ratio indicating workflow dysfunction
+\end{enumerate}
 
 \subsection{10.6M Token Anomaly (click/Opus/base)}
 
-Token breakdown reveals why Opus used 4.4$\times$ more tokens than Sonnet:
+The click/Opus/base configuration used 4.4$\times$ more tokens than click/Sonnet/base while achieving only marginally better coverage (67\% vs 64\%). Token breakdown reveals the cause:
 
 \begin{center}
 \begin{tabular}{lrr}
 \toprule
 \textbf{Metric} & \textbf{Sonnet} & \textbf{Opus} \\
 \midrule
-Messages & 47 & 161 \\
-Total tokens & 2.4M & 10.6M \\
-Edit calls & 12 & 25 \\
-Grep calls & 0 & 12 \\
+Messages exchanged & 47 & 161 \\
+Total tokens consumed & 2.4M & 10.6M \\
+Edit tool calls & 12 & 25 \\
+Grep tool calls & 0 & 12 \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Activity log shows repeated fix cycles:
+The session log shows Opus entering repeated fix cycles that Sonnet avoided:
 \begin{verbatim}
 Msg 40: "The base class expects source_template..."
 Msg 70: "Let me fix these issues:"
@@ -295,27 +356,27 @@ Msg 80: "Let me debug this test..."
 Msg 120: "Let me fix the LazyFile test issue:"
 \end{verbatim}
 
-\textbf{Root Cause}: Click had 190 existing tests. Opus's thoroughness led to more exploration (12 Grep vs 0), more iterations (25 Edit vs 12), and compounding context costs.
+\textbf{Root Cause}: Click had 190 existing tests with complex fixture patterns. Opus's more thorough approach (12 Grep calls vs 0) led to more exploration, more attempted integration with existing patterns, more iterations when those integrations failed (25 Edit vs 12), and compounding context costs as the conversation grew.
 
-\textbf{Lesson}: Sonnet achieved similar coverage (64\% vs 67\%) with 4.4$\times$ fewer tokens.
+\textbf{Practical Lesson}: Sonnet achieved nearly identical coverage (64\% vs 67\%) with 4.4$\times$ fewer tokens. For cost-sensitive applications, simpler models may be preferable.
 
-\subsection{V4 Catastrophic Failures (All Repos)}
+\subsection{V4 Catastrophic Failures Across All Repositories}
 
-In 5/9 repositories, V4 achieved $\leq$10\% coverage:
+In 5 of 9 repositories, V4 (+Mutations) achieved $\leq$10\% final coverage. This is not occasional underperformance---it is systematic failure:
 
 \begin{itemize}
-\item \textbf{click}: 0\% (mutation testing never completed)
-\item \textbf{python-box}: 1\% (mutmut errors on complex types)
-\item \textbf{dnaapler}: 0\% (bioinformatics domain confusion)
-\item \textbf{fastqe}: 0\% (emoji handling in mutants)
-\item \textbf{pyfaidx}: 0\% (file format parsing mutants)
+\item \textbf{click}: 0\% coverage. Mutation testing never completed; agent trapped in setup.
+\item \textbf{python-box}: 1\% coverage. mutmut encountered errors on python-box's complex nested dictionary types.
+\item \textbf{dnaapler}: 0\% coverage. Bioinformatics domain concepts confused the mutation analysis.
+\item \textbf{fastqe}: 0\% coverage. Emoji handling in test assertions created mutation chaos.
+\item \textbf{pyfaidx}: 0\% coverage. FASTA file format parsing generated hundreds of trivial mutants.
 \end{itemize}
 
-Common pattern: Agent enters mutation analysis loops, generating hundreds of mutants, then exhausts context attempting to address each before writing basic coverage tests.
+\textbf{Common Pattern}: In all cases, the agent entered mutation analysis loops: it would generate mutants, attempt to understand each surviving mutant, and exhaust its context window before writing any actual coverage tests. The prompt's instruction to ``use mutation testing'' overrode the implicit priority of ``write useful tests.''
 
 \subsection{Test Quality Comparison: V1 vs V6 (schedule)}
 
-Both variants produced tests with similar quality characteristics:
+To understand whether prompt complexity affects test quality (not just quantity), we manually compared tests generated by V1 (Baseline, 30 lines) and V6 (Minimal, 15 lines) on the schedule repository:
 
 \begin{center}
 \begin{tabular}{lrr}
@@ -324,13 +385,13 @@ Both variants produced tests with similar quality characteristics:
 \midrule
 Test file size & 856 lines & 610 lines \\
 Test functions & $\sim$40 & $\sim$30 \\
-Coverage & 97\% & 88\% \\
-Tokens used & 4.9M & 6.4M \\
+Final coverage & 97\% & 88\% \\
+Tokens consumed & 4.9M & 6.4M \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\textbf{V1 Example} (tests edge cases with real functions):
+\textbf{V1 Example} (tests edge cases with real function calls):
 \begin{verbatim}
 def test_job_repr_with_args_and_kwargs(self):
     with mock_datetime(2014, 6, 28, 12, 0):
@@ -342,7 +403,7 @@ def test_job_repr_with_args_and_kwargs(self):
         assert "'test_arg'" in repr(job)
 \end{verbatim}
 
-\textbf{V6 Example} (simpler, uses mocks):
+\textbf{V6 Example} (simpler structure, heavier mock usage):
 \begin{verbatim}
 def test_job_repr_representation(self):
     with mock_datetime(2014, 6, 28, 12, 0):
@@ -351,41 +412,53 @@ def test_job_repr_representation(self):
         assert "Every 1 second do test_job()" in repr(job)
 \end{verbatim}
 
-\textbf{Observation}: V1 tests more edge cases but both rely heavily on \texttt{mock.Mock()}. Neither variant produces the ideal ``real execution'' tests that would provide higher confidence. This is a limitation of LLM-generated tests that future work should address.
+\textbf{Observation}: V1 tests cover more edge cases but both variants rely heavily on \texttt{mock.Mock()} rather than testing real execution. Neither variant produces the ideal ``integration-style'' tests that would catch real bugs. This mock-heavy pattern was consistent across all repositories and all variants---a fundamental limitation of current LLM-generated tests that future work should address.
 
 \section{Appendix F: JobsCoach Bug Reports}
 
-Bugs detected by testScout during JobsCoach development:
+testScout was developed and evaluated during the construction of JobsCoach, a job search assistance application. During development, testScout's E2E testing identified 6 bugs that escaped unit test coverage:
 
 \begin{enumerate}
-\item \textbf{P0 - Route Ordering}: \texttt{/v2/jobs/fresh} caught by \texttt{/v2/jobs/\{job\_id\}} dynamic route
-\item \textbf{P1 - Database Init}: \texttt{create\_all()} without \texttt{checkfirst=True} causing table exists errors
-\item \textbf{P1 - Test Isolation}: 101 tests failing in suite but passing individually
-\item \textbf{P1 - API Parameters}: \texttt{query} and \texttt{filters} silently ignored
-\item \textbf{P2 - Duplicate Text}: ``Senior Senior Software Engineer'' in headlines
-\item \textbf{P2 - Filter State}: Frontend/backend property mismatch
+\item \textbf{P0 - Route Ordering Bug}: The FastAPI route \texttt{/v2/jobs/fresh} was being caught by the dynamic route \texttt{/v2/jobs/\{job\_id\}} because route registration order matters in FastAPI. The string ``fresh'' was interpreted as a job ID, causing 404 errors. Unit tests passed because they tested each endpoint in isolation; only E2E testing revealed the routing conflict.
+
+\item \textbf{P1 - Database Initialization}: \texttt{create\_all()} was called without \texttt{checkfirst=True}, causing ``table already exists'' errors when tests ran multiple times. Unit tests mocked the database layer; E2E tests hit the real database.
+
+\item \textbf{P1 - Test Isolation Failure}: 101 tests failed when run as a suite but passed individually. Database state was leaking between tests. E2E testing runs against persistent state, revealing isolation issues invisible to mocked unit tests.
+
+\item \textbf{P1 - API Parameters Ignored}: The \texttt{query} and \texttt{filters} parameters were silently ignored by the backend. Frontend sent them; backend received but didn't process them. Unit tests verified the API schema but not the implementation.
+
+\item \textbf{P2 - Duplicate Text}: Job headlines showed ``Senior Senior Software Engineer'' due to a string concatenation bug. Unit tests checked individual components; E2E testing saw the rendered output.
+
+\item \textbf{P2 - Filter State Mismatch}: Frontend used \texttt{isActive} but backend expected \texttt{is\_active}. The property mismatch caused filters to never apply. Only E2E testing exercises the full frontend-backend integration.
 \end{enumerate}
 
-All bugs were identified through systematic E2E testing and subsequently fixed.
+All bugs were identified through systematic E2E exploration using testScout's AI Mode and subsequently fixed. The total testScout API cost for this bug-finding session was approximately \$0.50.
 
-\section{Appendix G: Reproducibility}
+\section{Appendix G: Reproducibility Information}
 
-All experimental data, prompts, and analysis scripts are available at:
+All experimental data, prompts, session logs, and analysis scripts are publicly available:
 
+\textbf{aTSR Repository}: \url{https://github.com/rhowardstone/aTSR}
 \begin{itemize}
-\item \textbf{aTSR}: \url{https://github.com/rhowardstone/aTSR}
-  \begin{itemize}
-  \item \texttt{results/phase1/summary.json} - Phase 1 metrics
-  \item \texttt{results/phase2/*/metrics.json} - Phase 2 metrics
-  \end{itemize}
-\item \textbf{testScout}: \url{https://github.com/rhowardstone/testscout}
+\item \texttt{results/phase1/summary.json} -- Aggregated Phase 1 metrics
+\item \texttt{results/phase2/*/metrics.json} -- Per-configuration Phase 2 metrics (54 files)
+\item \texttt{src/prompts/} -- Full text of all 6 prompt variants
+\item \texttt{.claude/commands/} -- The \texttt{/refine-tests} slash command source
 \end{itemize}
 
-\textbf{Model versions used}:
+\textbf{testScout Repository}: \url{https://github.com/rhowardstone/testscout}
 \begin{itemize}
-\item Claude Sonnet 4.5 (claude-sonnet-4-5-20250901) -- aTSR experiments
-\item Claude Opus 4.1 (claude-opus-4-1-20250901) -- aTSR experiments
-\item Gemini 2.5 Pro -- testScout AI mode experiments
+\item \texttt{examples/} -- Example test scripts
+\item \texttt{audits/} -- Session audit trails with screenshots and decision logs
 \end{itemize}
+
+\textbf{Model Versions Used}:
+\begin{itemize}
+\item Claude Sonnet 4.5 (\texttt{claude-sonnet-4-5-20250901}) -- All aTSR Phase 1 and Phase 2 experiments
+\item Claude Opus 4.1 (\texttt{claude-opus-4-1-20250901}) -- aTSR Phase 1 experiments (Opus configurations only)
+\item Gemini 2.5 Pro -- testScout AI Mode experiments
+\end{itemize}
+
+\textbf{Reproducibility Note}: Due to LLM non-determinism, exact replication of our results is not possible. Running the same prompt on the same repository will produce different tests, different coverage numbers, and different token consumption. Our statistical analyses (sign test, variance decomposition) are designed to detect patterns robust to this variance, but individual configuration results should be interpreted as single samples from a distribution, not ground truth.
 
 \end{document}
