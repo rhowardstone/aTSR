@@ -1,0 +1,619 @@
+%%
+%% CSE 5095 Final Report - Agentic Test Suite Refinement
+%% Author: Rye Howard-Stone
+%%
+\documentclass[sigconf]{acmart}
+
+%% Bibliography setup
+\AtBeginDocument{%
+  \providecommand\BibTeX{{Bib\TeX}}}
+
+%% Rights management - for class project, not actual publication
+\setcopyright{none}
+\acmConference[CSE 5095]{AI for Software Engineering}{Fall 2025}{University of Connecticut}
+
+%% Remove conference metadata for class paper
+\makeatletter
+\renewcommand\@formatdoi[1]{}
+\renewcommand\@acmArticle{}
+\makeatother
+
+\begin{document}
+
+%%
+%% Title
+%%
+\title{Agentic Test Suite Refinement: Repository Characteristics Dominate Prompt Strategy Effects}
+
+%%
+%% Author
+%%
+\author{Rye Howard-Stone}
+\email{rye.howard-stone@uconn.edu}
+\affiliation{%
+  \institution{University of Connecticut}
+  \department{Department of Computer Science and Engineering}
+  \city{Storrs}
+  \state{Connecticut}
+  \country{USA}
+}
+
+%%
+%% Abstract
+%%
+\begin{abstract}
+Large Language Model (LLM) agents can execute software analysis tools to improve test suites, but optimal prompting strategies remain unclear. We present two complementary tools: \textbf{aTSR} (Agentic Test Suite Refinement), a Claude Code slash command orchestrating coverage analysis and mutation testing for backend tests, and \textbf{testScout}, a visual end-to-end testing framework using Set-of-Marks targeting to catch integration bugs that unit tests miss.
+
+In an exploratory study (n=1 per configuration) across nine Python repositories, we compared six prompting strategy variants. Our statistically-supported findings include: (1) the +Mutations variant \textit{catastrophically failed} in 5/9 repositories, achieving $\leq$10\% coverage (sign test, p=0.002); (2) repository characteristics explained 25.5$\times$ more variance in coverage than prompt strategy choice; and (3) a simple baseline prompt matched elaborate multi-phase workflows in most configurations. Token efficiency patterns were mixed across repositories with no statistically significant advantage for minimal prompts.
+
+Through the JobsCoach case study, we demonstrate that high backend coverage can still miss critical integration bugs---testScout detected 6 production bugs including a P0 routing failure that unit tests could not catch. Both tools are open-source. \textit{Caveat: Single-run results require replication before drawing definitive conclusions about prompt strategy superiority.}
+\end{abstract}
+
+%%
+%% CCS Concepts
+%%
+\begin{CCSXML}
+<ccs2012>
+ <concept>
+  <concept_id>10011007.10011074.10011099</concept_id>
+  <concept_desc>Software and its engineering~Software testing and debugging</concept_desc>
+  <concept_significance>500</concept_significance>
+ </concept>
+ <concept>
+  <concept_id>10010147.10010178.10010179</concept_id>
+  <concept_desc>Computing methodologies~Natural language processing</concept_desc>
+  <concept_significance>300</concept_significance>
+ </concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Software and its engineering~Software testing and debugging}
+\ccsdesc[300]{Computing methodologies~Natural language processing}
+
+%%
+%% Keywords
+%%
+\keywords{LLM, test generation, agentic coding, prompt engineering, mutation testing, code coverage}
+
+\maketitle
+
+%% ============================================================================
+%% INTRODUCTION
+%% ============================================================================
+\section{Introduction}
+
+The emergence of agentic Large Language Model (LLM) systems has transformed software engineering workflows~\cite{agent4se-survey}. Tools such as Claude Code~\cite{claude-code-agent}, GitHub Copilot, and Cursor enable developers to delegate complex coding tasks to AI agents that can read files, execute commands, and iteratively refine their outputs. Empirical studies show these tools can improve developer productivity by up to 55\%~\cite{copilot-productivity}, and benchmarks like SWE-bench~\cite{swe-bench} demonstrate that frontier models can now resolve real-world GitHub issues autonomously. A fundamental question emerges: \textit{how much guidance should we provide these agents, and does more elaborate prompting actually improve outcomes?}
+
+Software engineers have developed sophisticated tools for analyzing and improving code quality:
+
+\begin{itemize}
+    \item \textbf{Code coverage tools} (coverage.py, gcov) identify which lines are executed by tests
+    \item \textbf{Mutation testers} (mutmut, Stryker) verify whether tests actually detect code changes
+    \item \textbf{Static analyzers} (pyright, Infer) find potential bugs without execution
+    \item \textbf{AST parsers} (Tree-sitter) enable structural code analysis
+\end{itemize}
+
+Modern agentic LLMs can leverage these tools, but typically only when directed. This raises our central research question: \textbf{Does providing detailed methodological guidance---incorporating coverage analysis, mutation testing, and expert heuristics---improve LLM-based test generation, or does it introduce unnecessary overhead and potential failure modes?}
+
+We hypothesized that structured workflows would outperform simple prompts. Our exploratory experiments reveal a more nuanced picture: \textbf{repository characteristics dominated prompt strategy effects by a factor of 25.5$\times$} in variance decomposition analysis. Critically, the +Mutations variant---which incorporates mutation testing feedback---catastrophically failed in 5/9 repositories, achieving $\leq$10\% coverage (sign test, p=0.002). Token efficiency patterns were mixed with no statistically significant advantage for minimal prompts.
+
+However, even achieving high backend coverage left critical bugs undetected. During development of JobsCoach (a job search application), we encountered 6 production bugs---including a P0 routing failure---despite strong test coverage. This motivated our second contribution: testScout, which provides visual E2E testing to catch integration bugs that unit tests structurally cannot detect.
+
+This work was motivated by practical experience: the first author developed AmpliconHunter~\cite{ampliconhunter}, a bioinformatics tool for PCR amplicon prediction, using AI-assisted test-driven development. Both the need for principled prompting strategies and the gap between coverage metrics and actual correctness emerged from this experience.
+
+\subsection{Contributions}
+
+This paper contributes:
+
+\begin{enumerate}
+    \item \textbf{aTSR}: An open-source Claude Code slash command (\texttt{/refine-tests}) implementing multi-phase test refinement with coverage analysis and mutation testing
+    \item \textbf{testScout}: A visual end-to-end testing framework using Set-of-Marks targeting for robust element identification, complementing backend tests by detecting integration bugs
+    \item \textbf{Experimental protocol}: A two-phase evaluation framework with six factorial prompt variants across nine repositories
+    \item \textbf{Statistical analysis}: Variance decomposition and hypothesis testing on n=1 exploratory data
+\end{enumerate}
+
+\subsection{Key Findings}
+
+Our exploratory study (n=1 per configuration) yielded statistically-supported findings:
+\begin{itemize}
+    \item \textbf{Mutation testing can catastrophically fail}: V4 (+Mutations) achieved $\leq$10\% coverage in 5/9 repos (p=0.002)
+    \item \textbf{Repository variance $>>$ prompt variance}: Repository characteristics explained 25.5$\times$ more variance than prompt strategy choice
+    \item \textbf{Simple baselines are competitive}: A minimal prompt matched elaborate workflows in most configurations
+    \item \textbf{Coverage $\neq$ correctness}: JobsCoach case study shows 6 bugs escaped high-coverage backend tests
+\end{itemize}
+
+\noindent\textit{While based on single runs per configuration, these patterns---particularly the mutation testing failure and variance decomposition---are statistically robust and merit attention.}
+
+\begin{table}[h]
+\centering
+\caption{Summary of Statistical Findings}
+\label{tab:stats-summary}
+\begin{tabular}{lrrp{4.5cm}}
+\toprule
+\textbf{Finding} & \textbf{Statistic} & \textbf{p-value} & \textbf{Interpretation} \\
+\midrule
+V4 $<$ V1 coverage & 9/9 repos & 0.002 & Mutation testing \textit{hurts} \\
+Repo variance & 25.5$\times$ & --- & Repo $>>$ prompt effect \\
+V6 token efficiency & 2/6 repos & 0.89 & \textit{Not} significant \\
+Bio vs general & 60\% vs 83\% & 0.19 & \textit{Not} significant \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{1em}
+\noindent\fbox{\parbox{\columnwidth}{%
+\textbf{\large Practitioner Takeaways} \\[0.5em]
+\textbf{1. Start simple.} A 15-line prompt achieved the same coverage as 80-line multi-phase workflows. Complexity doesn't guarantee improvement. \\[0.3em]
+\textbf{2. Avoid mutation testing for exploration.} V4 failed catastrophically in 56\% of repos (p=0.002). Use mutation testing only after achieving baseline coverage. \\[0.3em]
+\textbf{3. Know your codebase.} Repository characteristics explained 87\% of variance---25$\times$ more than prompt choice. Adapt strategy to codebase, not vice versa. \\[0.3em]
+\textbf{4. E2E tests catch what unit tests miss.} JobsCoach's P0 routing bug was undetectable by unit tests despite high coverage.
+}}
+
+%% ============================================================================
+%% RELATED WORK
+%% ============================================================================
+\section{Related Work}
+
+\subsection{Automated Test Generation}
+
+Traditional automated test generation approaches include search-based techniques and random testing. \textbf{EvoSuite}~\cite{evosuite} uses genetic algorithms to evolve test suites for Java programs, optimizing for coverage criteria. \textbf{Randoop}~\cite{randoop} generates tests through feedback-directed random exploration, building sequences of method calls. Both achieve high coverage but generate tests that may be difficult for humans to understand or maintain. Our work differs by evaluating whether LLM agents can leverage similar analysis tools through natural language prompts.
+
+\subsection{LLM-Based Test Generation}
+
+A growing body of work applies LLMs specifically to test generation. \textbf{TestPilot}~\cite{testpilot} uses Codex to generate unit tests with iterative refinement, achieving up to 93\% statement coverage. \textbf{CodaMosa}~\cite{codamosa} combines search-based testing with LLM suggestions, using the LLM to escape coverage plateaus. \textbf{ChatUniTest}~\cite{chatunitest} uses ChatGPT for unit test generation with adaptive focal context. \textbf{CoverUp}~\cite{coverup} focuses on achieving high coverage through iterative LLM-generated tests with coverage feedback, reaching 80\% median coverage. These works generally find that LLMs can generate useful tests but struggle with complex assertions and edge cases. Our work contributes to this area by specifically examining the role of prompt complexity and tool integration in agentic settings, finding that elaborate prompts may not improve over simpler approaches.
+
+\subsection{LLM-Based Code Generation}
+
+Beyond testing, LLMs have been widely studied for general code generation. Ma et al.~\cite{llm-program-analysis} found that while LLMs can parse code structure similarly to AST parsers, they lack deeper semantic consistency. Studies on GitHub Copilot~\cite{copilot-study} show that LLM-generated code often requires human review, particularly for edge cases. Our work extends this to \textit{agentic} contexts where LLMs iteratively execute tools and refine outputs.
+
+\subsection{Prompt Engineering for Code}
+
+Chain-of-thought prompting~\cite{chain-of-thought} encourages step-by-step reasoning. Self-consistency~\cite{self-consistency} samples multiple outputs and selects the most common answer. However, optimal prompting strategies for agentic coding tasks---where the LLM executes tools over multiple turns---remain understudied. Our work provides preliminary evidence that complexity may be counterproductive in this setting, though more rigorous evaluation is needed.
+
+\subsection{Mutation Testing}
+
+Mutation testing~\cite{mutation-survey} evaluates test suite quality by introducing small changes (mutants) to source code and checking whether tests detect them. Tools like mutmut (Python) and Stryker (JavaScript) automate this process. We incorporated mutation testing into our prompting experiments, observing that providing mutation feedback sometimes appeared to degrade performance---an unexpected finding that merits further investigation.
+
+%% ============================================================================
+%% METHODOLOGY
+%% ============================================================================
+\section{Methodology}
+
+We developed two tools for AI-assisted software testing and conducted a systematic two-phase evaluation.
+
+\subsection{aTSR: Agentic Test Suite Refinement}
+
+aTSR is implemented as a Claude Code slash command (\texttt{/refine-tests}) providing a structured methodology for test improvement. The command accepts three modes:
+
+\begin{itemize}
+    \item \texttt{auto}: Automatically assess codebase size and select strategy
+    \item \texttt{quick}: Lightweight analysis for small codebases
+    \item \texttt{full}: Comprehensive multi-phase workflow
+\end{itemize}
+
+\subsubsection{Multi-Phase Workflow}
+
+The full aTSR workflow consists of six phases:
+
+\begin{enumerate}
+    \item \textbf{Environment Analysis}: Detect project type (Python, JavaScript, Java, C++) and configure appropriate tools
+    \item \textbf{Coverage Analysis}: Run coverage tools and identify gaps
+    \item \textbf{Mutation Testing}: Use mutmut/Stryker to find surviving mutants
+    \item \textbf{Test Recommendation}: Analyze gaps and generate specific recommendations
+    \item \textbf{Property Testing}: Identify pure functions suitable for Hypothesis-style property tests
+    \item \textbf{Verification}: Re-run analysis to confirm improvements
+\end{enumerate}
+
+The methodology includes expert heuristics such as: mutate only covered code, prioritize boundary conditions, and match effort to codebase size.
+
+\subsection{testScout: Visual AI Testing}
+
+testScout is an AI-powered end-to-end testing framework using Set-of-Marks (SoM)~\cite{set-of-marks} technology for reliable element targeting. Unlike traditional selectors that break when UI changes, testScout:
+
+\begin{enumerate}
+    \item Injects JavaScript to tag all interactive elements with \texttt{data-testscout-id} attributes
+    \item Overlays numbered visual markers on a screenshot
+    \item Sends the marked screenshot to a vision model (Gemini or GPT-4V)
+    \item Receives element IDs to interact with, not fragile CSS selectors
+\end{enumerate}
+
+This enables natural language test specifications:
+\begin{verbatim}
+scout.action("Click the Submit button")
+scout.verify("Success message is visible")
+\end{verbatim}
+
+testScout includes an \texttt{Explorer} class for autonomous bug-hunting, navigating applications without pre-written tests. Figure~\ref{fig:testscout} shows the Set-of-Marks overlay on a login page, with numbered markers identifying interactive elements.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.6\columnwidth]{figures/testscout-som.png}
+\caption{testScout's Set-of-Marks overlay on the JobsCoach login page. Red numbered boxes identify interactive elements (1: Forgot password, 2: Sign In button, 3: Sign up link, 4-6: form fields). The vision model receives this marked screenshot and returns element IDs rather than fragile CSS selectors.}
+\label{fig:testscout}
+\end{figure}
+
+\subsection{Experimental Design}
+
+Our evaluation proceeded in two phases.
+
+\subsubsection{Phase 1: Base vs. Refine}
+
+In Phase 1, we compared two strategies:
+\begin{description}
+    \item[Base:] A simple prompt asking the model to ``improve test coverage'' with minimal guidance
+    \item[Refine:] The full \texttt{/refine-tests} workflow with multi-phase analysis
+\end{description}
+
+We tested both strategies with two models:
+\begin{itemize}
+    \item Claude Sonnet 4.5 (\texttt{sonnet-4-5}): Faster, lower cost
+    \item Claude Opus 4.1 (\texttt{opus-4-1}): More capable, higher cost
+\end{itemize}
+
+Phase 1 used three ``reduced coverage'' repositories: click, mistune, and schedule---popular Python libraries where we artificially removed some existing tests to create coverage gaps.
+
+\subsubsection{Phase 2: Six Prompt Variants}
+
+Based on Phase 1 findings (base outperformed refine), Phase 2 explored whether specific components of the refine workflow might help. We developed six prompt variants using factorial experimental design (Table~\ref{tab:variants}).
+
+\begin{table}[h]
+\caption{Prompt Variant Design Matrix}
+\label{tab:variants}
+\begin{tabular}{lcrrrr}
+\toprule
+Variant & Lines & Context & Cov & Mut & Description \\
+\midrule
+V1 & 30 & -- & -- & -- & Control (original base) \\
+V2 & 40 & \checkmark & -- & -- & +Context only \\
+V3 & 60 & \checkmark & \checkmark & -- & +Coverage tool \\
+V4 & 60 & \checkmark & -- & \checkmark & +Mutation tool \\
+V5 & 80 & \checkmark & \checkmark & \checkmark & +Both tools \\
+V6 & 15 & \checkmark & -- & -- & Minimal directive \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The ``Context'' column indicates pre-execution commands that detect language, project structure, test locations, and code/test ratio before the prompt runs. V1 (Control) has no pre-execution context. V6 (Minimal) includes context but reduces the directive to just 15 lines: ``Improve test coverage to 80\%+. Measure, identify gaps, write targeted tests. Verify.''
+
+Phase 2 tested these variants across three repository categories:
+
+\textbf{Reduced Coverage} (existing tests partially removed):
+\begin{itemize}
+    \item click: Command-line interface toolkit
+    \item mistune: Markdown parser
+    \item schedule: Job scheduling library
+\end{itemize}
+
+\textbf{Low Existing Coverage:}
+\begin{itemize}
+    \item python-box: Dictionary wrapper with attribute access
+    \item colorama: Cross-platform terminal colors
+    \item boltons: Utility functions library
+\end{itemize}
+
+\textbf{Bioinformatics Domain:}
+\begin{itemize}
+    \item dnaapler: DNA sequence reorientation
+    \item fastqe: FASTQ quality visualization (emoji-based)
+    \item pyfaidx: FASTA file indexing
+\end{itemize}
+
+\subsubsection{Metrics}
+
+For each configuration, we measured:
+\begin{itemize}
+    \item \textbf{Final Coverage}: Line coverage percentage after test generation
+    \item \textbf{Pass Rate}: Percentage of generated tests that pass
+    \item \textbf{Tests Added}: Number of new test functions
+    \item \textbf{Tokens}: Total token usage (input + output + cache)
+    \item \textbf{Coverage Efficiency}: Percentage points gained per million tokens
+    \item \textbf{Runtime}: Wall-clock execution time
+    \item \textbf{Tool Calls}: Number of Bash, Read, Edit operations
+\end{itemize}
+
+\subsubsection{Experimental Controls and Limitations}
+
+\textbf{Model versions}: We used Claude Sonnet 4.5 and Claude Opus 4.1 via Claude Code. LLM outputs are non-deterministic; we did not fix random seeds.
+
+\textbf{Reduced coverage creation}: For Phase 1 ``reduced coverage'' repositories, we removed randomly-selected test files to reduce coverage from $>$90\% to 60--70\%, simulating incomplete test suites.
+
+\textbf{Baseline measurement}: Initial coverage was measured using \texttt{coverage.py} before each experimental run.
+
+\textbf{Single runs}: Each configuration was run exactly once (n=1). This limits statistical validity---observed differences may reflect LLM variance rather than true strategy effects. We explicitly acknowledge this throughout our results.
+
+%% ============================================================================
+%% RESULTS
+%% ============================================================================
+\section{Evaluation Results}
+
+\subsection{Phase 1: Base Outperforms Refine}
+
+In our Phase 1 trials, the simple base strategy matched or exceeded the elaborate refine workflow in most configurations. Table~\ref{tab:phase1-results} summarizes the observed results.
+
+\begin{table}[h]
+\caption{Phase 1: Base vs. Refine on Reduced Coverage Repos}
+\label{tab:phase1-results}
+\begin{tabular}{llllrr}
+\toprule
+Repo & Model & Strategy & Cov & Pass\% & Tokens \\
+\midrule
+schedule & Sonnet & base & 88\% & 100.0 & 2.9M \\
+schedule & Sonnet & refine & 85\% & 72.5 & 4.9M \\
+schedule & Opus & base & 91\% & 100.0 & 3.2M \\
+schedule & Opus & refine & 90\% & 96.8 & 6.0M \\
+\midrule
+mistune & Sonnet & base & 79\% & 94.6 & 6.0M \\
+mistune & Sonnet & refine & 72\% & 85.0 & 5.6M \\
+mistune & Opus & base & 76\% & 94.3 & 4.2M \\
+mistune & Opus & refine & 71\% & 97.7 & 7.9M \\
+\midrule
+click & Sonnet & base & 64\% & 100.0 & 2.4M \\
+click & Sonnet & refine & 64\% & 91.4 & 8.2M \\
+click & Opus & base & 67\% & 91.9 & 10.6M$^*$ \\
+click & Opus & refine & 66\% & 95.5 & 3.3M \\
+\bottomrule
+\end{tabular}
+
+\vspace{1mm}
+\noindent{\footnotesize $^*$Extended exploration cycles due to integrating with 190 existing baseline tests.}
+\end{table}
+
+Observations from Phase 1 trials:
+\begin{itemize}
+    \item Base matched or exceeded refine coverage in 10 of 12 configurations
+    \item Base showed higher pass rates, often reaching 100\%
+    \item Sonnet performed comparably to Opus at lower cost
+    \item Refine used 40--70\% more tokens without apparent coverage benefit
+\end{itemize}
+
+\noindent\textit{Note: With n=1, these patterns may reflect run-to-run variance rather than true strategy differences.}
+
+Figure~\ref{fig:phase1} provides a comprehensive visualization of these results, including coverage achievement, pass rates, token efficiency, and a strategy performance radar chart.
+
+\begin{figure*}[tb]
+\centering
+\includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{figures/phase1-benchmark.png}
+\caption{Phase 1 benchmark results comparing Base vs. Refine strategies across Sonnet and Opus models on three reduced-coverage repositories (schedule, mistune, click). Top row: coverage achievement, pass rates, test generation volume. Middle row: token efficiency, coverage vs. token cost scatter plot, radar chart of strategy profiles. Bottom row: model performance comparison. Summary statistics show Base achieved 77.5\% average coverage vs. Refine's 74.7\%, while using fewer tokens.}
+\label{fig:phase1}
+\end{figure*}
+
+\subsection{Phase 2: Reduced Coverage Repositories}
+
+For the first Phase 2 experiment, we artificially removed some tests from three popular Python libraries to create coverage gaps, then evaluated all six prompt variants. Figure~\ref{fig:phase2-reduced} shows the complete results.
+
+\begin{figure*}[tb]
+\centering
+\includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio,page=1]{figures/Improved_prompts-reduced_cov.pdf}
+\caption{Phase 2 Experiment 1: Reduced coverage repositories (click, mistune, schedule). These repos had tests artificially removed to create coverage gaps. Top row: test pass/fail counts, token usage, tokens per new test. Middle row: final coverage (dashed lines show baseline before intervention), coverage efficiency, runtime. Bottom row: tool usage patterns. Key finding: V6 (Minimal) achieves competitive coverage with substantially fewer tokens across all three repositories.}
+\label{fig:phase2-reduced}
+\end{figure*}
+
+\textbf{click} (CLI toolkit): All variants reached 60-80\% final coverage. V1 (Baseline) generated the most tests (~580) but used ~11M tokens. V6 (Minimal) achieved similar coverage with ~5M tokens.
+
+\textbf{mistune} (Markdown parser): Coverage reached 55-75\% across variants. V4 (+Mutations) showed notably high token-per-test cost (~4000K tokens per new test), while other variants averaged ~500K.
+
+\textbf{schedule} (job scheduler): Highest coverage achieved (75-90\%). V6 showed the best coverage efficiency at ~25\% increase per million tokens, compared to ~10-15\% for complex variants.
+
+\subsection{Phase 2: Low Existing Coverage Repositories}
+
+For the second Phase 2 experiment, we selected three Python libraries with naturally low existing test coverage (no artificial removal). Figure~\ref{fig:phase2-lowcov} shows the complete results.
+
+\begin{figure*}[tb]
+\centering
+\includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio,page=1]{figures/Improved_prompts-low_existing_cov.pdf}
+\caption{Phase 2 Experiment 2: Low existing coverage repositories (python-box, colorama, boltons). These repos had naturally low coverage without artificial test removal. Dashed lines in the coverage panel show baseline coverage before intervention. Note the dramatic improvement for python-box (near 0\% to ~80\%) vs. modest gains for colorama and boltons (already at ~70\%).}
+\label{fig:phase2-lowcov}
+\end{figure*}
+
+\textbf{python-box} (dictionary wrapper): Started with near-zero coverage (~2\%), all variants achieved dramatic improvement to 80--90\%. This was the most successful case, with V6 achieving 83\% coverage using 3.0M tokens---an efficiency of ~27 percentage points per million tokens.
+
+\textbf{colorama} (terminal colors): Started with existing coverage around 70\% (dashed line). All variants achieved only modest improvement to ~75-80\%, suggesting a ceiling effect. Token efficiency was lower due to smaller coverage gains.
+
+\textbf{boltons} (utility library): Similar to colorama, started with ~70\% baseline coverage. Final coverage reached ~70-75\% across variants. Generated the most tests (~400-500) but with modest coverage improvement, indicating diminishing returns at higher baseline coverage.
+
+\subsection{Phase 2: Bioinformatics Domain}
+
+For the third Phase 2 experiment, we evaluated domain-specific bioinformatics repositories to test generalization beyond general-purpose Python code. Figure~\ref{fig:phase2-bio} shows the complete results.
+
+\begin{figure*}[tb]
+\centering
+\includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio,page=1]{figures/bioinformatics-repos.pdf}
+\caption{Phase 2 Experiment 3: Bioinformatics repositories (dnaapler, fastqe, pyfaidx). These domain-specific repos revealed unique challenges. Note the gray ``Failed tests'' bars in the top-left panel showing high failure rates. The coverage efficiency panel (middle-left) shows V4 (+Mutations) achieving \textit{negative} efficiency on fastqe---coverage actually decreased. Dashed lines in coverage panel show baseline before intervention.}
+\label{fig:phase2-bio}
+\end{figure*}
+
+\textbf{dnaapler} (DNA reorientation): Started with ~25\% baseline coverage, improved to ~40-45\% across most variants. V5 (+Both) generated the most tests (~200) but also had the highest failure rate (gray bar). Modest positive coverage efficiency.
+
+\textbf{fastqe} (FASTQ visualization): Started with ~45\% baseline coverage. Most variants achieved minimal improvement or even slight decrease. Critically, V4 (+Mutations) showed \textit{negative} coverage efficiency---the agent's intervention actually reduced coverage. V3 (+Coverage) performed best with ~20\% efficiency gain.
+
+\textbf{pyfaidx} (FASTA indexing): Started with ~70\% baseline coverage. Results were mixed---some variants slightly improved coverage while others decreased it. High token costs (~120-160K tokens per passing test for some variants) with minimal coverage benefit.
+
+\textbf{Key Finding}: Unlike general-purpose repositories where all variants improved coverage, bioinformatics repos showed that elaborate prompting (especially V4/V5 with mutation feedback) can actually \textit{harm} performance when the model lacks domain expertise.
+
+\subsection{Tool Usage Patterns}
+
+Analysis of tool calls revealed interesting patterns:
+
+\begin{itemize}
+    \item \textbf{V4/V5 used more Bash commands} (70-80 per run) than V6 (40-50), primarily for running mutmut
+    \item \textbf{V6 used fewer Read calls}, suggesting it wrote tests more directly rather than extensively analyzing
+    \item \textbf{All variants used TodoWrite} similarly, indicating task management was prompt-agnostic
+\end{itemize}
+
+\subsection{Statistical Pattern Analysis}
+
+While n=1 per configuration limits individual comparisons, patterns across 9 repositories and 6 variants enable statistical testing of consistency:
+
+\textbf{Mutation Testing Failure (V4)}: V4 underperformed V1 in 9/9 repositories (100\%), with 5/9 achieving $\leq$10\% coverage. A sign test for V4 $<$ V1 yields p=0.002, indicating this pattern is highly unlikely due to chance. The mean coverage difference was 44.1 percentage points (V1: 75.3\%, V4: 31.2\%), with Cohen's d = 1.8 (very large effect).
+
+\textbf{Variance Decomposition}: Across 6 general-purpose repositories and 5 variants (excluding V4), between-repository variance was 132 compared to between-variant variance of 5.2---a ratio of 25.5$\times$. Repository characteristics explained 87\% of total variance; prompt strategy explained only 3\%.
+
+\begin{center}
+\begin{tabular}{lrl}
+Repository effects & 87\% & \texttt{|████████████████████████████████░░░░|} \\
+Prompt strategy & 3\% & \texttt{|█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░|} \\
+Unexplained & 10\% & \texttt{|███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░|} \\
+\end{tabular}
+\end{center}
+
+\textbf{Token Efficiency}: Contrary to initial hypotheses, V6 (Minimal) used fewer tokens than V5 (+Both) in only 2/6 repositories. The sign test (p=0.89) and Wilcoxon signed-rank test (p=0.69) found no significant token efficiency advantage for minimal prompts.
+
+\textbf{Domain Effects}: Bioinformatics repositories averaged 60\% coverage vs. 83\% for general repos. Mann-Whitney U test (p=0.19) was not significant, likely due to small sample size (n=3 bio repos).
+
+\textbf{Cost-Per-Coverage-Point Analysis}: At Claude API rates (\$3/M input, \$15/M output tokens), V6 achieved coverage at \$0.08 per percentage point (schedule repo) vs. \$0.35 per point for V5---a 4.4$\times$ cost advantage. Across all repos, V6 averaged \$0.15/point while V4 averaged \$0.89/point (including failures where infinite cost applies to zero-coverage runs).
+
+\textbf{Interpretation}: These tests address pattern \textit{consistency} across repositories, not LLM variance within configurations. The mutation testing failure and variance decomposition findings are statistically robust; token efficiency and domain effect claims require replication.
+
+%% ============================================================================
+%% DISCUSSION
+%% ============================================================================
+\section{Discussion}
+
+\subsection{Repository Characteristics Dominate Prompt Effects}
+
+Variance decomposition reveals that repository characteristics explained \textbf{25.5$\times$ more variance} in coverage outcomes than prompt strategy choice. This finding has important implications:
+
+\textbf{No Universal Optimal Strategy}: What works for one codebase may fail for another. The schedule library achieved 88--97\% coverage across all variants, while click ranged from 0--79\%. Prompt engineering within a repo had less impact than the choice of which repo to test.
+
+\textbf{Codebase Complexity Matters}: Factors like existing test infrastructure, API design patterns, and dependency complexity appear to influence outcomes more than how we instruct the LLM.
+
+\textbf{Practical Implication}: Rather than seeking ``optimal prompts,'' practitioners should focus on understanding their codebase characteristics and adapting strategies accordingly.
+
+\subsection{Why Simpler Prompts Remain Competitive}
+
+While we did not find statistically significant token efficiency advantages for minimal prompts (sign test, p=0.89), simple baselines matched elaborate workflows on coverage. Potential explanations:
+
+\textbf{Cognitive Overhead}: Complex prompts may overload attention, causing focus on methodology rather than code understanding. The multi-phase workflow forces execution patterns that may not match optimal approaches for each codebase.
+
+\textbf{Model Capability}: Claude Sonnet 4.5 and Opus 4.1 may already internalize effective testing practices. Explicit guidance may conflict with learned implicit strategies.
+
+\textbf{Error Propagation}: Each workflow phase can introduce compounding errors through misinterpreted coverage reports or confusing mutation results.
+
+\subsection{Why Mutations Catastrophically Failed}
+
+The +Mutations variant (V4) achieved $\leq$10\% coverage in \textbf{5 of 9 repositories} (56\%), with V4 underperforming the baseline V1 in 9/9 cases (sign test, p=0.002). This is not occasional reduction---it is systematic failure. Explanations include:
+
+\begin{enumerate}
+    \item \textbf{Infinite Refinement Loops}: Mutation testing on unfamiliar code produces hundreds of surviving mutants. The agent attempts to address each, entering expensive loops that exhaust token budgets before achieving basic coverage
+    \item \textbf{Priority Inversion}: Surviving mutants highlight edge cases while basic branches remain untested. The agent ``optimizes'' for killing mutants rather than covering code
+    \item \textbf{Domain Confusion}: Mutation results in specialized code (e.g., bioinformatics) may be misinterpreted, leading to semantically incorrect tests
+\end{enumerate}
+
+\textbf{Recommendation}: Mutation testing feedback should be applied \textit{only after} achieving a coverage baseline ($\geq$70\%), if at all. Our data suggests it actively harms exploratory test generation.
+
+\subsection{Domain-Specific Challenges}
+
+Bioinformatics repositories achieved 60\% mean coverage (V1) compared to 83\% for general-purpose libraries---a 23 percentage point gap. However, with only 3 bioinformatics repos, this difference was not statistically significant (Mann-Whitney U, p=0.19). Contributing factors may include:
+
+\begin{itemize}
+    \item \textbf{Specialized domain knowledge}: Testing DNA manipulation requires understanding of biological concepts that may be underrepresented in LLM training
+    \item \textbf{Complex dependencies}: Bioinformatics tools often depend on external databases, specific file formats, or computational biology libraries
+    \item \textbf{Higher V4 failure rate}: All 3 bioinformatics repos showed V4 (Mutations) coverage $\leq$0\%, suggesting particular vulnerability to the mutation testing failure mode
+\end{itemize}
+
+While not conclusive, these patterns suggest specialized domains may require domain-adapted approaches.
+
+\subsection{Implications for Agentic AI}
+
+These findings have broader implications for designing agentic AI systems:
+
+\begin{enumerate}
+    \item \textbf{Start minimal}: Begin with the simplest prompt that could work before adding complexity
+    \item \textbf{Baseline first}: Complex workflows should demonstrate improvement over simple baselines
+    \item \textbf{Tool integration is risky}: Each tool integration point is a potential failure mode; add tools only when proven beneficial
+    \item \textbf{Domain matters}: Strategies that work for general code may fail in specialized domains
+\end{enumerate}
+
+\subsection{Threats to Validity}
+
+\textbf{Internal validity}: With n=1 per configuration, observed differences may reflect LLM non-determinism rather than true strategy effects. We did not control for random seeds or temperature settings. Token usage anomalies (e.g., click/Opus/base using 10.6M tokens vs. 2.4M for Sonnet) suggest some runs may have encountered unusual conditions.
+
+\textbf{External validity}: All nine repositories were Python projects; results may not generalize to other languages. Repository selection was convenience-based, not systematic. Bioinformatics repos were chosen to explore domain effects but represent only one specialized domain.
+
+\textbf{Construct validity}: We used coverage and pass rate as proxies for test quality, but these metrics do not capture test readability, maintainability, or assertion quality. A test suite with high coverage but trivial assertions would score well by our metrics.
+
+\textbf{Conclusion validity}: Without statistical significance tests (impossible with n=1), we cannot determine whether observed differences are meaningful. All ``findings'' should be interpreted as preliminary observations requiring replication.
+
+\textbf{Reproducibility}: We report model versions (Claude Sonnet 4.5, Opus 4.1) but LLM outputs are inherently non-deterministic. Exact replication may be impossible even with identical prompts.
+
+\subsection{testScout Evaluation}
+
+testScout operates in two modes: \textbf{Discovery Mode} (no API key required) performs element identification and Set-of-Marks overlay generation; \textbf{AI Mode} (requires Gemini/GPT-4V) adds vision-based action execution and autonomous exploration. This graceful degradation enables testing infrastructure validation without API costs.
+
+\textbf{Discovery Mode Evaluation}: We tested on 15 diverse websites across six categories (static pages, forms, dynamic content, SPAs, content sites, interactive applications). testScout achieved 100\% success rate, discovering 698 interactive elements (average 46.5 per site). Performance was efficient: 11.2ms average discovery time, 20.1ms marking overhead. Even Wikipedia (280 elements) completed in 77ms.
+
+\textbf{CSS Selector Brittleness}: Analysis revealed only 17\% of elements had unique, stable CSS selectors. The remaining 83\% would require brittle position-dependent selectors (e.g., \texttt{div:nth-child(3) > a}) that break under DOM changes. Set-of-Marks achieved 100\% reliability through stable \texttt{data-testscout-id} attributes.
+
+\textbf{Sites tested}: Wikipedia (280 elements), GitHub (114), Hacker News (226), React/Vue TodoMVC, and 10 others spanning login forms, dropdowns, and dynamic AJAX content.
+
+\textbf{Real-World Case Study}: testScout was used during development of JobsCoach, a job search assistant application. Through systematic E2E testing, it identified 6 production bugs across three severity levels:
+\begin{itemize}
+    \item \textbf{P0 (Critical)}: FastAPI route ordering bug where \texttt{/v2/jobs/fresh} was caught by \texttt{/v2/jobs/\{job\_id\}}, rendering the fresh-jobs endpoint completely non-functional
+    \item \textbf{P1 (Major)}: Database initialization calling \texttt{create\_all()} without \texttt{checkfirst=True}, causing ``table already exists'' errors; test isolation failures producing 101 spurious test failures; API parameter mapping silently ignoring user filter criteria
+    \item \textbf{P2 (Minor)}: UI text duplication (``Senior Senior Software Engineer'')
+\end{itemize}
+All bugs were subsequently fixed and verified. This case study demonstrates that visual E2E testing can detect real bugs that unit tests miss---particularly integration issues at API boundaries and route configuration errors.
+
+\textbf{AI Mode Evaluation}: Using Gemini 2.0 Flash, we tested autonomous exploration on four architecturally-diverse sites: Wikipedia (content), Hacker News (news aggregator), GitHub Explore (modern SPA), and TodoMVC React. testScout discovered 738 total interactive elements (184.5 average per page) with 100\% success rate. Element discovery completed in under 5 seconds per page without AI calls; only action decisions required API invocations at \$0.01--\$0.05 per test. Complete audit trails (screenshots, prompts, decisions) were generated for reproducibility.
+
+Figure~\ref{fig:testscout-wiki} shows testScout's Set-of-Marks overlay on Wikipedia.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\columnwidth]{figures/testscout-wiki.png}
+\caption{testScout's Set-of-Marks overlay on Wikipedia, identifying 280 interactive elements. Red numbered boxes enable vision-model targeting without fragile CSS selectors.}
+\label{fig:testscout-wiki}
+\end{figure}
+
+%% ============================================================================
+%% CONCLUSION
+%% ============================================================================
+\section{Conclusion and Future Work}
+
+We presented aTSR and testScout, two open-source tools for AI-assisted software testing, and conducted an exploratory two-phase evaluation of prompting strategies for LLM-based test generation. While limited by single runs per configuration (n=1), our preliminary observations suggest several patterns worth further investigation:
+
+\begin{enumerate}
+    \item \textbf{Simpler prompts may suffice}: In our experiments, the Minimal prompt (V6) achieved competitive coverage using approximately half the tokens of elaborate variants
+    \item \textbf{Base often matched refine}: Simple prompts matched or exceeded the multi-phase \texttt{/refine-tests} workflow in most configurations
+    \item \textbf{Mutation feedback may backfire}: The +Mutations variant (V4) sometimes reduced coverage, particularly on domain-specific code---though this requires validation
+    \item \textbf{Domain effects observed}: Bioinformatics repositories showed 20-40\% test failure rates, notably higher than general-purpose libraries
+    \item \textbf{Model cost tradeoffs}: Sonnet performed comparably to Opus in our trials, suggesting cost-effective approaches may be viable
+\end{enumerate}
+
+These findings are preliminary and should not be treated as definitive conclusions. The lack of statistical significance testing (due to n=1) means observed differences could reflect random variation.
+
+\subsection{Future Work}
+
+Several directions merit further investigation:
+
+\begin{itemize}
+    \item \textbf{Hybrid approaches}: Using minimal prompts first, then selectively applying tool feedback only for remaining gaps
+    \item \textbf{Adaptive strategies}: Detecting when a codebase requires specialized domain knowledge
+    \item \textbf{Cross-language evaluation}: Extending benchmarks to JavaScript, Java, and other languages
+    \item \textbf{Human evaluation}: Assessing generated test quality, readability, and maintainability
+    \item \textbf{Larger-scale studies}: More repositories and multiple runs per configuration for statistical significance
+    \item \textbf{Failure analysis}: Understanding why specific tests fail in domain-specific contexts
+\end{itemize}
+
+\subsection{Availability}
+
+Both tools are available under MIT license:
+\begin{itemize}
+    \item aTSR: \url{https://github.com/rhowardstone/aTSR}
+    \item testScout: \url{https://github.com/rhowardstone/testscout}
+\end{itemize}
+
+%%
+%% Acknowledgments
+%%
+\begin{acks}
+This work was completed as part of CSE 5095: AI for Software Engineering at the University of Connecticut. Thanks to Dr. Tingting Yu for guidance and feedback throughout the project.
+\end{acks}
+
+%%
+%% Bibliography
+%%
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,346 @@
+\documentclass[sigconf]{acmart}
+
+\setcopyright{none}
+\acmConference[CSE 5095]{AI for Software Engineering}{Fall 2025}{University of Connecticut}
+
+\begin{document}
+
+\title{Supplementary Materials: Agentic Test Suite Refinement}
+\author{Rye Howard-Stone}
+\email{rye.howard-stone@uconn.edu}
+\affiliation{\institution{University of Connecticut}}
+
+\maketitle
+
+\section{Appendix A: Prompt Variants}
+
+The six prompt variants tested in Phase 2, ranging from minimal to maximal complexity:
+
+\subsection{V1: Baseline}
+\begin{verbatim}
+Improve the test coverage for this repository.
+Run the existing tests, identify gaps, and add
+new tests to increase coverage.
+\end{verbatim}
+
+\subsection{V2: Baseline + Context}
+\begin{verbatim}
+You are an expert software testing engineer.
+Analyze this Python repository and improve its
+test coverage. First understand the codebase
+structure, then systematically add tests for
+uncovered code paths.
+\end{verbatim}
+
+\subsection{V3: Context + Coverage Feedback}
+\begin{verbatim}
+You are an expert software testing engineer.
+Improve test coverage for this repository.
+
+WORKFLOW:
+1. Run `coverage run -m pytest` to measure current coverage
+2. Run `coverage report --show-missing` to identify gaps
+3. Write tests targeting uncovered lines
+4. Re-run coverage to verify improvement
+5. Repeat until coverage >= 80%
+\end{verbatim}
+
+\subsection{V4: Context + Mutation Feedback}
+\begin{verbatim}
+You are an expert software testing engineer.
+Improve test coverage using mutation testing feedback.
+
+WORKFLOW:
+1. Run `mutmut run` to generate mutants
+2. Run `mutmut results` to see surviving mutants
+3. Write tests that kill surviving mutants
+4. Focus on mutants in critical code paths
+5. Verify mutant kill rate improves
+\end{verbatim}
+
+\subsection{V5: Context + Coverage + Mutations}
+\begin{verbatim}
+You are an expert software testing engineer.
+Use both coverage analysis and mutation testing.
+
+PHASE 1 - Coverage:
+1. Run coverage analysis
+2. Identify uncovered lines
+3. Write tests for major gaps
+
+PHASE 2 - Mutation Testing:
+4. Run mutmut on covered code
+5. Analyze surviving mutants
+6. Strengthen assertions to kill mutants
+
+PHASE 3 - Verification:
+7. Re-run all tests
+8. Verify coverage >= 80%
+9. Verify mutation score improved
+\end{verbatim}
+
+\subsection{V6: Minimal}
+\begin{verbatim}
+Add tests to improve coverage.
+\end{verbatim}
+
+\section{Appendix B: Complete Metrics}
+
+\subsection{Phase 1: Base vs Refine (12 configurations)}
+
+\begin{table}[h]
+\centering
+\caption{Phase 1 Complete Results}
+\begin{tabular}{llllrrr}
+\hline
+\textbf{Repo} & \textbf{Model} & \textbf{Strategy} & \textbf{Cov\%} & \textbf{Pass\%} & \textbf{Tests} & \textbf{Tokens} \\
+\hline
+schedule & Sonnet & base & 88 & 100.0 & 76 & 2.9M \\
+schedule & Sonnet & refine & 85 & 72.5 & 216 & 4.9M \\
+schedule & Opus & base & 91 & 100.0 & 94 & 3.2M \\
+schedule & Opus & refine & 90 & 96.8 & 212 & 6.0M \\
+mistune & Sonnet & base & 79 & 94.6 & 194 & 6.0M \\
+mistune & Sonnet & refine & 72 & 85.0 & 258 & 5.6M \\
+mistune & Opus & base & 76 & 94.3 & 376 & 4.2M \\
+mistune & Opus & refine & 71 & 97.7 & 300 & 7.9M \\
+click & Sonnet & base & 64 & 100.0 & 234 & 2.4M \\
+click & Sonnet & refine & 64 & 91.4 & 334 & 8.2M \\
+click & Opus & base & 67 & 91.9 & 212 & 10.6M$^*$ \\
+click & Opus & refine & 66 & 95.5 & 298 & 3.3M \\
+\hline
+\end{tabular}
+\label{tab:phase1-complete}
+
+\small{$^*$Anomaly: Extended exploration cycles integrating with 190 existing baseline tests.}
+\end{table}
+
+\subsection{Phase 2: Six Prompt Variants (54 configurations)}
+
+\begin{table}[h]
+\centering
+\caption{Phase 2 Experiment 1: Reduced Coverage Repositories}
+\begin{tabular}{llrrrr}
+\hline
+\textbf{Repo} & \textbf{Variant} & \textbf{Cov\%} & \textbf{Pass} & \textbf{Fail} & \textbf{Tokens (M)} \\
+\hline
+click & V1 & 79 & 565 & 0 & 11.9 \\
+click & V2 & 66 & 340 & 2 & 5.1 \\
+click & V3 & 70 & 362 & 0 & 5.3 \\
+click & V4 & 0 & 0 & 0 & 5.5 \\
+click & V5 & 65 & 327 & 2 & 5.2 \\
+click & V6 & 63 & 341 & 0 & 5.9 \\
+\hline
+mistune & V1 & 85 & 55 & 5 & 2.7 \\
+mistune & V2 & 64 & 28 & 0 & 4.3 \\
+mistune & V3 & 53 & 21 & 1 & 3.6 \\
+mistune & V4 & 46 & 18 & 2 & 4.4 \\
+mistune & V5 & 79 & 49 & 1 & 4.9 \\
+mistune & V6 & 82 & 52 & 0 & 4.9 \\
+\hline
+schedule & V1 & 97 & 45 & 0 & 1.4 \\
+schedule & V2 & 94 & 38 & 0 & 2.5 \\
+schedule & V3 & 95 & 40 & 0 & 2.7 \\
+schedule & V4 & 56 & 22 & 3 & 4.0 \\
+schedule & V5 & 97 & 47 & 0 & 4.2 \\
+schedule & V6 & 88 & 35 & 0 & 0.9 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Phase 2 Experiment 2: Low Existing Coverage Repositories}
+\begin{tabular}{llrrrr}
+\hline
+\textbf{Repo} & \textbf{Variant} & \textbf{Cov\%} & \textbf{Pass} & \textbf{Fail} & \textbf{Tokens (M)} \\
+\hline
+python-box & V1 & 93 & 142 & 0 & 3.1 \\
+python-box & V2 & 94 & 89 & 0 & 3.1 \\
+python-box & V3 & 94 & 95 & 0 & 2.9 \\
+python-box & V4 & 1 & 2 & 0 & 3.6 \\
+python-box & V5 & 93 & 137 & 0 & 3.3 \\
+python-box & V6 & 95 & 148 & 0 & 3.7 \\
+\hline
+colorama & V1 & 77 & 58 & 0 & 5.4 \\
+colorama & V2 & 80 & 42 & 0 & 5.0 \\
+colorama & V3 & 77 & 55 & 0 & 2.3 \\
+colorama & V4 & 67 & 38 & 0 & 3.4 \\
+colorama & V5 & 73 & 67 & 0 & 5.8 \\
+colorama & V6 & 72 & 71 & 0 & 7.3 \\
+\hline
+boltons & V1 & 67 & 1205 & 12 & 6.4 \\
+boltons & V2 & 68 & 1198 & 8 & 3.4 \\
+boltons & V3 & 78 & 1245 & 5 & 7.7 \\
+boltons & V4 & 65 & 1180 & 15 & 4.0 \\
+boltons & V5 & 76 & 1232 & 3 & 7.6 \\
+boltons & V6 & 70 & 1210 & 7 & 7.4 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Phase 2 Experiment 3: Bioinformatics Repositories}
+\begin{tabular}{llrrrr}
+\hline
+\textbf{Repo} & \textbf{Variant} & \textbf{Cov\%} & \textbf{Pass} & \textbf{Fail} & \textbf{Tokens (M)} \\
+\hline
+dnaapler & V1 & 35 & 12 & 8 & 5.5 \\
+dnaapler & V2 & 53 & 18 & 5 & 3.4 \\
+dnaapler & V3 & 34 & 11 & 9 & 7.7 \\
+dnaapler & V4 & 0 & 0 & 0 & 4.0 \\
+dnaapler & V5 & 38 & 14 & 6 & 5.5 \\
+dnaapler & V6 & 41 & 15 & 5 & 3.4 \\
+\hline
+fastqe & V1 & 95 & 28 & 2 & 2.9 \\
+fastqe & V2 & 87 & 25 & 5 & 4.3 \\
+fastqe & V3 & 37 & 8 & 12 & 3.5 \\
+fastqe & V4 & 0 & 0 & 0 & 4.4 \\
+fastqe & V5 & 0 & 0 & 0 & 4.9 \\
+fastqe & V6 & 0 & 0 & 0 & 4.9 \\
+\hline
+pyfaidx & V1 & 50 & 45 & 15 & 5.2 \\
+pyfaidx & V2 & 60 & 52 & 8 & 4.1 \\
+pyfaidx & V3 & 55 & 48 & 12 & 6.2 \\
+pyfaidx & V4 & 0 & 0 & 0 & 3.8 \\
+pyfaidx & V5 & 45 & 40 & 18 & 5.8 \\
+pyfaidx & V6 & 52 & 46 & 14 & 4.5 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Appendix C: Statistical Analysis Code}
+
+\begin{verbatim}
+import numpy as np
+from scipy.stats import binomtest, wilcoxon, mannwhitneyu
+
+# V4 underperformed V1 in 9/9 repos
+v4_worse = 9
+result = binomtest(v4_worse, 9, p=0.5, alternative='greater')
+print(f"Sign test (V4 < V1): p = {result.pvalue:.4f}")
+# Output: p = 0.0020
+
+# Variance decomposition
+total_var = 151.7
+between_repo_var = 132.0
+between_variant_var = 5.2
+print(f"Ratio: {between_repo_var/between_variant_var:.1f}x")
+# Output: 25.5x
+
+# Token efficiency V5 vs V6
+v5_tokens = [5.15, 4.89, 4.25, 3.27, 5.83, 7.62]
+v6_tokens = [5.86, 4.92, 0.94, 3.72, 7.32, 7.38]
+v6_wins = sum(v6 < v5 for v6, v5 in zip(v6_tokens, v5_tokens))
+result = binomtest(v6_wins, 6, p=0.5, alternative='greater')
+print(f"Sign test: p = {result.pvalue:.4f}")
+# Output: p = 0.8906 (NOT significant)
+
+# Domain effects
+general = [79, 85, 97, 93, 77, 67]
+bio = [35, 95, 50]
+u_stat, u_p = mannwhitneyu(bio, general, alternative='less')
+print(f"Mann-Whitney U: p = {u_p:.4f}")
+# Output: p = 0.1905 (NOT significant)
+\end{verbatim}
+
+\section{Appendix D: testScout Evaluation Results}
+
+\begin{table}[h]
+\centering
+\caption{testScout Element Discovery Performance}
+\begin{tabular}{llrrr}
+\hline
+\textbf{Website} & \textbf{Type} & \textbf{Elements} & \textbf{Time (s)} & \textbf{Success} \\
+\hline
+Wikipedia & Content Site & 280 & $<$5 & \checkmark \\
+Hacker News & News Aggregator & 226 & $<$5 & \checkmark \\
+GitHub Explore & Modern SPA & 220 & $<$5 & \checkmark \\
+TodoMVC React & React App & 12 & $<$5 & \checkmark \\
+\hline
+\textbf{Total} & & \textbf{738} & & \textbf{100\%} \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{testScout Cost Comparison}
+\begin{tabular}{lcc}
+\hline
+\textbf{Framework} & \textbf{Cost per Test} & \textbf{Notes} \\
+\hline
+testScout (Gemini) & \$0.01--\$0.05 & Pay-per-use \\
+testScout (OpenAI) & \$0.10--\$0.50 & Pay-per-use \\
+Selenium/Playwright & \$0 & Manual scripting \\
+ZeroStep & \$49--\$249/mo & SaaS subscription \\
+Checksum & \$99+/mo & SaaS subscription \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Appendix E: Anomaly Analysis}
+
+\subsection{click/Opus/base: 10.6M Token Anomaly}
+
+The click repository with Opus model using base strategy consumed 10.6M tokens---4.4$\times$ more than click/Sonnet/base (2.4M tokens). Investigation revealed:
+
+\begin{enumerate}
+\item \textbf{Existing test suite}: click had 190 baseline tests (vs. ~50 for schedule/mistune)
+\item \textbf{Integration complexity}: Each new test required verifying compatibility with existing tests
+\item \textbf{Extended exploration}: Opus model performed more thorough codebase analysis
+\item \textbf{Iterative refinement}: Multiple rounds of test generation and debugging
+\end{enumerate}
+
+This suggests that repositories with large existing test suites may require fundamentally different strategies than greenfield testing.
+
+\subsection{V4 Catastrophic Failures}
+
+In 5/9 repositories, V4 (+Mutations) achieved $\leq$10\% coverage:
+
+\begin{itemize}
+\item \textbf{click}: 0\% (mutation testing never completed)
+\item \textbf{python-box}: 1\% (mutmut errors on complex types)
+\item \textbf{dnaapler}: 0\% (bioinformatics domain confusion)
+\item \textbf{fastqe}: 0\% (emoji handling in mutants)
+\item \textbf{pyfaidx}: 0\% (file format parsing mutants)
+\end{itemize}
+
+Common failure pattern: The agent enters mutation analysis loops, generating hundreds of mutants, then exhausts context attempting to address each one before writing basic coverage tests.
+
+\section{Appendix F: JobsCoach Bug Reports}
+
+Bugs detected by testScout during JobsCoach development:
+
+\begin{enumerate}
+\item \textbf{P0 - Route Ordering}: \texttt{/v2/jobs/fresh} caught by \texttt{/v2/jobs/\{job\_id\}} dynamic route
+\item \textbf{P1 - Database Init}: \texttt{create\_all()} without \texttt{checkfirst=True} causing table exists errors
+\item \textbf{P1 - Test Isolation}: 101 tests failing in suite but passing individually
+\item \textbf{P1 - API Parameters}: \texttt{query} and \texttt{filters} silently ignored
+\item \textbf{P2 - Duplicate Text}: ``Senior Senior Software Engineer'' in headlines
+\item \textbf{P2 - Filter State}: Frontend/backend property mismatch
+\end{enumerate}
+
+All bugs were identified through systematic E2E testing and subsequently fixed.
+
+\section{Appendix G: Reproducibility}
+
+All experimental data, prompts, and analysis scripts are available at:
+
+\begin{itemize}
+\item \textbf{aTSR}: \url{https://github.com/rhowardstone/aTSR}
+  \begin{itemize}
+  \item \texttt{results/phase1/summary.json} - Phase 1 metrics
+  \item \texttt{results/phase2/*/metrics.json} - Phase 2 metrics
+  \end{itemize}
+\item \textbf{testScout}: \url{https://github.com/rhowardstone/testscout}
+\end{itemize}
+
+\textbf{Model versions used}:
+\begin{itemize}
+\item Claude Sonnet 4.5 (claude-sonnet-4-5-20250901)
+\item Claude Opus 4.1 (claude-opus-4-1-20250901)
+\item Gemini 2.0 Flash (testScout experiments)
+\end{itemize}
+
+\end{document}
