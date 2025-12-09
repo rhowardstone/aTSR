@@ -4,6 +4,10 @@
 %%
 \documentclass[sigconf]{acmart}
 
+%% Colors for visual emphasis
+\usepackage{xcolor}
+\usepackage{enumitem}
+
 %% Bibliography setup
 \AtBeginDocument{%
   \providecommand\BibTeX{{Bib\TeX}}}
@@ -491,7 +495,28 @@ While we did not find statistically significant token efficiency advantages for 
 
 \subsection{Why Mutations Catastrophically Failed}
 
-The +Mutations variant (V4) achieved $\leq$10\% coverage in \textbf{5 of 9 repositories} (56\%), with V4 underperforming the baseline V1 in 9/9 cases (sign test, p=0.002). This is not occasional reduction---it is systematic failure. Explanations include:
+The +Mutations variant (V4) achieved $\leq$10\% coverage in \textbf{5 of 9 repositories} (56\%), with V4 underperforming the baseline V1 in 9/9 cases (sign test, p=0.002). This is not occasional reduction---it is \textit{systematic failure}:
+
+\begin{center}
+\small
+\begin{tabular}{lrrrl}
+\toprule
+\textbf{Repository} & \textbf{V1 Cov.} & \textbf{V4 Cov.} & \textbf{$\Delta$} & \textbf{Outcome} \\
+\midrule
+click & 79\% & 0\% & $-$79 pts & \textcolor{red}{Catastrophic} \\
+python-box & 93\% & 1\% & $-$92 pts & \textcolor{red}{Catastrophic} \\
+dnaapler & 35\% & 0\% & $-$35 pts & \textcolor{red}{Catastrophic} \\
+fastqe & 95\% & 0\% & $-$95 pts & \textcolor{red}{Catastrophic} \\
+pyfaidx & 50\% & 0\% & $-$50 pts & \textcolor{red}{Catastrophic} \\
+schedule & 97\% & 56\% & $-$41 pts & Degraded \\
+mistune & 85\% & 46\% & $-$39 pts & Degraded \\
+colorama & 77\% & 67\% & $-$10 pts & Degraded \\
+boltons & 67\% & 65\% & $-$2 pts & Degraded \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Explanations include:
 
 \begin{enumerate}
     \item \textbf{Infinite Refinement Loops}: Mutation testing on unfamiliar code produces hundreds of surviving mutants. The agent attempts to address each, entering expensive loops that exhaust token budgets before achieving basic coverage
@@ -536,6 +561,19 @@ These findings have broader implications for designing agentic AI systems:
 
 \textbf{Reproducibility}: We report model versions (Claude Sonnet 4.5, Opus 4.1) but LLM outputs are inherently non-deterministic. Exact replication may be impossible even with identical prompts.
 
+\vspace{0.5em}
+\noindent\fbox{\parbox{0.95\columnwidth}{%
+\textbf{Open Science Statement:} All experimental artifacts are publicly available:
+\begin{itemize}[noitemsep,topsep=0pt,leftmargin=*]
+    \item \textbf{54 configuration metrics}: \texttt{results/phase2/*/metrics.json}
+    \item \textbf{6 prompt variants}: Full text in Appendix A
+    \item \textbf{Statistical analysis code}: Reproducible Python in Appendix C
+    \item \textbf{testScout audit trails}: Screenshots, prompts, decisions
+\end{itemize}
+\vspace{-0.5em}
+Repository: \url{https://github.com/rhowardstone/aTSR}
+}}
+
 \subsection{testScout Evaluation}
 
 testScout operates in two modes: \textbf{Discovery Mode} (no API key required) performs element identification and Set-of-Marks overlay generation; \textbf{AI Mode} (requires Gemini/GPT-4V) adds vision-based action execution and autonomous exploration. This graceful degradation enables testing infrastructure validation without API costs.
@@ -553,6 +591,8 @@ testScout operates in two modes: \textbf{Discovery Mode} (no API key required) p
     \item \textbf{P2 (Minor)}: UI text duplication (``Senior Senior Software Engineer'')
 \end{itemize}
 All bugs were subsequently fixed and verified. This case study demonstrates that visual E2E testing can detect real bugs that unit tests miss---particularly integration issues at API boundaries and route configuration errors.
+
+\textbf{Cost Perspective}: The P0 routing bug would have been invisible to any unit test (routes are tested individually; ordering is a deployment concern). Industry estimates suggest production bugs cost 10--100$\times$ more to fix than development bugs~\cite{bug-cost-study}. At testScout's cost of \$0.01--\$0.05 per test, finding these 6 bugs cost approximately \$0.50 total---likely preventing hours of production debugging.
 
 \textbf{AI Mode Evaluation}: Using Gemini 2.0 Flash, we tested autonomous exploration on four architecturally-diverse sites: Wikipedia (content), Hacker News (news aggregator), GitHub Explore (modern SPA), and TodoMVC React. testScout discovered 738 total interactive elements (184.5 average per page) with 100\% success rate. Element discovery completed in under 5 seconds per page without AI calls; only action decisions required API invocations at \$0.01--\$0.05 per test. Complete audit trails (screenshots, prompts, decisions) were generated for reproducibility.
 
