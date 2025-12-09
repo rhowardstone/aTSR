@@ -103,7 +103,7 @@ This work was motivated by practical experience: the first author developed Ampl
 This paper contributes:
 
 \begin{enumerate}
-    \item \textbf{aTSR}: An open-source Claude Code slash command (\texttt{/refine-tests}) implementing multi-phase test refinement with coverage analysis and mutation testing
+    \item \textbf{aTSR}: An open-source Claude Code slash command implementing multi-phase test refinement with coverage analysis and mutation testing
     \item \textbf{testScout}: A visual end-to-end testing framework using Set-of-Marks targeting for robust element identification, complementing backend tests by detecting integration bugs
     \item \textbf{Experimental protocol}: A two-phase evaluation framework with six factorial prompt variants across nine repositories
     \item \textbf{Statistical analysis}: Variance decomposition and hypothesis testing on n=1 exploratory data
@@ -257,7 +257,7 @@ click & Opus & refine & 66\% & 95.5 & 3.3M \\
 \end{tabular}
 
 \vspace{1mm}
-\noindent{\footnotesize $^*$Anomaly: click repository had 190 pre-existing tests; Opus spent extra tokens analyzing these before writing new tests.}
+\noindent{\footnotesize $^*$Anomaly: click repository had 190 pre-existing tests; Opus/base spent extra tokens analyzing these before writing new tests (Opus/refine handled this efficiently).}
 \end{table}
 
 Several patterns emerged from Phase 1 trials. Base matched or exceeded refine coverage in 10 of 12 configurations and showed higher pass rates, often reaching 100\%. Sonnet performed comparably to Opus at lower cost. Meanwhile, the refine strategy used 40--70\% more tokens without apparent coverage benefit.
