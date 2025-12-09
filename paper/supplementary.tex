@@ -14,75 +14,31 @@
 
 \section{Appendix A: Prompt Variants}
 
-The six prompt variants tested in Phase 2, ranging from minimal to maximal complexity:
+\textbf{Note}: The prompts shown below are \textit{simplified summaries}. The actual prompts used in experiments were substantially larger (30--80 lines) and included pre-execution shell commands for context gathering. Full prompt text is available at:
 
-\subsection{V1: Baseline}
-\begin{verbatim}
-Improve the test coverage for this repository.
-Run the existing tests, identify gaps, and add
-new tests to increase coverage.
-\end{verbatim}
+\begin{center}
+\url{https://github.com/rhowardstone/aTSR/tree/main/src/prompts}
+\end{center}
 
-\subsection{V2: Baseline + Context}
-\begin{verbatim}
-You are an expert software testing engineer.
-Analyze this Python repository and improve its
-test coverage. First understand the codebase
-structure, then systematically add tests for
-uncovered code paths.
-\end{verbatim}
+\begin{table}[h]
+\centering
+\caption{Prompt Variant Summary}
+\small
+\begin{tabular}{llp{5.5cm}}
+\toprule
+\textbf{Variant} & \textbf{Lines} & \textbf{Description} \\
+\midrule
+V1: Baseline & 30 & Simple directive to improve coverage. No pre-execution context. \\
+V2: +Context & 40 & Adds pre-execution commands: \texttt{find}, \texttt{wc}, \texttt{ls} to detect language, structure, test locations, code/test ratio. \\
+V3: +Coverage & 60 & V2 + explicit \texttt{coverage.py} workflow with iterative gap-filling loop. \\
+V4: +Mutations & 60 & V2 + explicit \texttt{mutmut} workflow for mutation-guided testing. \\
+V5: +Both & 80 & V2 + three-phase workflow: coverage first, then mutations, then verification. \\
+V6: Minimal & 15 & Pre-execution context only. Directive reduced to: ``Improve coverage to 80\%+.'' \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsection{V3: Context + Coverage Feedback}
-\begin{verbatim}
-You are an expert software testing engineer.
-Improve test coverage for this repository.
-
-WORKFLOW:
-1. Run `coverage run -m pytest` to measure current coverage
-2. Run `coverage report --show-missing` to identify gaps
-3. Write tests targeting uncovered lines
-4. Re-run coverage to verify improvement
-5. Repeat until coverage >= 80%
-\end{verbatim}
-
-\subsection{V4: Context + Mutation Feedback}
-\begin{verbatim}
-You are an expert software testing engineer.
-Improve test coverage using mutation testing feedback.
-
-WORKFLOW:
-1. Run `mutmut run` to generate mutants
-2. Run `mutmut results` to see surviving mutants
-3. Write tests that kill surviving mutants
-4. Focus on mutants in critical code paths
-5. Verify mutant kill rate improves
-\end{verbatim}
-
-\subsection{V5: Context + Coverage + Mutations}
-\begin{verbatim}
-You are an expert software testing engineer.
-Use both coverage analysis and mutation testing.
-
-PHASE 1 - Coverage:
-1. Run coverage analysis
-2. Identify uncovered lines
-3. Write tests for major gaps
-
-PHASE 2 - Mutation Testing:
-4. Run mutmut on covered code
-5. Analyze surviving mutants
-6. Strengthen assertions to kill mutants
-
-PHASE 3 - Verification:
-7. Re-run all tests
-8. Verify coverage >= 80%
-9. Verify mutation score improved
-\end{verbatim}
-
-\subsection{V6: Minimal}
-\begin{verbatim}
-Add tests to improve coverage.
-\end{verbatim}
+\textbf{Phase 1 (Base vs Refine)}: ``Base'' used a simple coverage improvement prompt; ``Refine'' used the full \texttt{/refine-tests} slash command implementing a 6-phase workflow (environment detection, coverage analysis, mutation testing, recommendations, property testing, verification). Full slash command source: \url{https://github.com/rhowardstone/aTSR/tree/main/.claude/commands}
 
 \section{Appendix B: Complete Metrics}
 
@@ -427,9 +383,9 @@ All experimental data, prompts, and analysis scripts are available at:
 
 \textbf{Model versions used}:
 \begin{itemize}
-\item Claude Sonnet 4.5 (claude-sonnet-4-5-20250901)
-\item Claude Opus 4.1 (claude-opus-4-1-20250901)
-\item Gemini 2.0 Flash (testScout experiments)
+\item Claude Sonnet 4.5 (claude-sonnet-4-5-20250901) -- aTSR experiments
+\item Claude Opus 4.1 (claude-opus-4-1-20250901) -- aTSR experiments
+\item Gemini 2.5 Pro -- testScout AI mode experiments
 \end{itemize}
 
 \end{document}

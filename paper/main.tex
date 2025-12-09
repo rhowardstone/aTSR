@@ -298,7 +298,7 @@ For the first Phase 2 experiment, we artificially removed some tests from three 
 
 \begin{figure*}[tb]
 \centering
-\includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio,page=1]{figures/Improved_prompts-reduced_cov.pdf}
+\includegraphics[width=\textwidth,height=0.88\textheight,keepaspectratio,page=1]{figures/Improved_prompts-reduced_cov.pdf}
 \caption{Phase 2 Experiment 1: Reduced coverage repositories (click, mistune, schedule). These repos had tests artificially removed to create coverage gaps. Top row: test pass/fail counts, token usage, tokens per new test. Middle row: final coverage (dashed lines show baseline before intervention), coverage efficiency, runtime. Bottom row: tool usage patterns. Key finding: V6 (Minimal) achieves competitive coverage with substantially fewer tokens across all three repositories.}
 \label{fig:phase2-reduced}
 \end{figure*}
@@ -315,7 +315,7 @@ For the second Phase 2 experiment, we selected three Python libraries with natur
 
 \begin{figure*}[tb]
 \centering
-\includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio,page=1]{figures/Improved_prompts-low_existing_cov.pdf}
+\includegraphics[width=\textwidth,height=0.88\textheight,keepaspectratio,page=1]{figures/Improved_prompts-low_existing_cov.pdf}
 \caption{Phase 2 Experiment 2: Low existing coverage repositories (python-box, colorama, boltons). These repos had naturally low coverage without artificial test removal. Dashed lines in the coverage panel show baseline coverage before intervention. Note the dramatic improvement for python-box (near 0\% to ~80\%) vs. modest gains for colorama and boltons (already at ~70\%).}
 \label{fig:phase2-lowcov}
 \end{figure*}
@@ -332,7 +332,7 @@ For the third Phase 2 experiment, we evaluated domain-specific bioinformatics re
 
 \begin{figure*}[tb]
 \centering
-\includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio,page=1]{figures/bioinformatics-repos.pdf}
+\includegraphics[width=\textwidth,height=0.88\textheight,keepaspectratio,page=1]{figures/bioinformatics-repos.pdf}
 \caption{Phase 2 Experiment 3: Bioinformatics repositories (dnaapler, fastqe, pyfaidx). These domain-specific repos revealed unique challenges. Note the gray ``Failed tests'' bars in the top-left panel showing high failure rates. The coverage efficiency panel (middle-left) shows V4 (+Mutations) achieving \textit{negative} efficiency on fastqe---coverage actually decreased. Dashed lines in coverage panel show baseline before intervention.}
 \label{fig:phase2-bio}
 \end{figure*}
@@ -463,13 +463,13 @@ testScout operates in two modes: \textbf{Discovery Mode} (no API key required) p
 
 \textbf{Case Study}: testScout identified 6 bugs in JobsCoach: P0 route ordering (invisible to unit tests), P1 database/isolation errors, P2 UI duplication. At \$0.01--\$0.05/test, finding these cost $\sim$\$0.50---preventing hours of debugging~\cite{bug-cost-study}.
 
-\textbf{AI Mode}: Gemini 2.0 Flash discovered 738 elements across 4 sites with 100\% success. Audit trails generated for reproducibility.
+\textbf{AI Mode}: Gemini 2.5 Pro discovered 738 elements across 4 sites with 100\% success. Audit trails generated for reproducibility.
 
 Figure~\ref{fig:testscout-wiki} shows testScout's Set-of-Marks overlay on Wikipedia.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.7\columnwidth]{figures/testscout-wiki.png}
+\includegraphics[width=\columnwidth]{figures/testscout-wiki.png}
 \caption{testScout's Set-of-Marks overlay on Wikipedia, identifying 280 interactive elements. Red numbered boxes enable vision-model targeting without fragile CSS selectors.}
 \label{fig:testscout-wiki}
 \end{figure}
