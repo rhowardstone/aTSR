@@ -88,14 +88,7 @@ Through the JobsCoach case study, we demonstrate that high backend coverage can 
 
 The emergence of agentic Large Language Model (LLM) systems has transformed software engineering workflows~\cite{agent4se-survey}. Tools such as Claude Code~\cite{claude-code-agent}, GitHub Copilot, and Cursor enable developers to delegate complex coding tasks to AI agents that can read files, execute commands, and iteratively refine their outputs. Empirical studies show these tools can improve developer productivity by up to 55\%~\cite{copilot-productivity}, and benchmarks like SWE-bench~\cite{swe-bench} demonstrate that frontier models can now resolve real-world GitHub issues autonomously. A fundamental question emerges: \textit{how much guidance should we provide these agents, and does more elaborate prompting actually improve outcomes?}
 
-Software engineers have developed sophisticated tools for analyzing and improving code quality:
-
-\begin{itemize}
-    \item \textbf{Code coverage tools} (coverage.py, gcov) identify which lines are executed by tests
-    \item \textbf{Mutation testers} (mutmut, Stryker) verify whether tests actually detect code changes
-    \item \textbf{Static analyzers} (pyright, Infer) find potential bugs without execution
-    \item \textbf{AST parsers} (Tree-sitter) enable structural code analysis
-\end{itemize}
+Software engineers have developed sophisticated tools for analyzing and improving code quality. Code coverage tools such as coverage.py and gcov identify which lines are executed by tests. Mutation testers like mutmut and Stryker verify whether tests actually detect code changes. Static analyzers including pyright and Infer find potential bugs without execution, while AST parsers such as Tree-sitter enable structural code analysis.
 
 Modern agentic LLMs can leverage these tools, but typically only when directed. This raises our central research question: \textbf{Does providing detailed methodological guidance---incorporating coverage analysis, mutation testing, and expert heuristics---improve LLM-based test generation, or does it introduce unnecessary overhead and potential failure modes?}
 
@@ -118,15 +111,9 @@ This paper contributes:
 
 \subsection{Key Findings}
 
-Our exploratory study (n=1 per configuration) yielded statistically-supported findings:
-\begin{itemize}
-    \item \textbf{Mutation testing can catastrophically fail}: V4 (+Mutations) achieved $\leq$10\% coverage in 5/9 repos (p=0.002)
-    \item \textbf{Repository variance $>>$ prompt variance}: Repository characteristics explained 25.5$\times$ more variance than prompt strategy choice
-    \item \textbf{Simple baselines are competitive}: A minimal prompt matched elaborate workflows in most configurations
-    \item \textbf{Coverage $\neq$ correctness}: JobsCoach case study shows 6 bugs escaped high-coverage backend tests
-\end{itemize}
+Our exploratory study (n=1 per configuration) yielded statistically-supported findings. Most critically, mutation testing can catastrophically fail: V4 (+Mutations) achieved $\leq$10\% coverage in 5/9 repos (p=0.002). Variance decomposition revealed that repository characteristics explained 25.5$\times$ more variance than prompt strategy choice. Despite this, simple baselines remained competitive---a minimal prompt matched elaborate workflows in most configurations. Finally, the JobsCoach case study demonstrated that coverage does not equal correctness: 6 bugs escaped high-coverage backend tests.
 
-\noindent\textit{While based on single runs per configuration, these patterns---particularly the mutation testing failure and variance decomposition---are statistically robust and merit attention.}
+\textit{While based on single runs per configuration, these patterns---particularly the mutation testing failure and variance decomposition---are statistically robust and merit attention.}
 
 \begin{table}[h]
 \centering
@@ -273,15 +260,9 @@ click & Opus & refine & 66\% & 95.5 & 3.3M \\
 \noindent{\footnotesize $^*$Anomaly: click repository had 190 pre-existing tests; Opus spent extra tokens analyzing these before writing new tests.}
 \end{table}
 
-Observations from Phase 1 trials:
-\begin{itemize}
-    \item Base matched or exceeded refine coverage in 10 of 12 configurations
-    \item Base showed higher pass rates, often reaching 100\%
-    \item Sonnet performed comparably to Opus at lower cost
-    \item Refine used 40--70\% more tokens without apparent coverage benefit
-\end{itemize}
+Several patterns emerged from Phase 1 trials. Base matched or exceeded refine coverage in 10 of 12 configurations and showed higher pass rates, often reaching 100\%. Sonnet performed comparably to Opus at lower cost. Meanwhile, the refine strategy used 40--70\% more tokens without apparent coverage benefit.
 
-\noindent\textit{Note: With n=1, these patterns may reflect run-to-run variance rather than true strategy differences.}
+\textit{Note: With n=1, these patterns may reflect run-to-run variance rather than true strategy differences.}
 
 Figure~\ref{fig:phase1} provides a comprehensive visualization of these results, including coverage achievement, pass rates, token efficiency, and a strategy performance radar chart.
 
@@ -347,13 +328,7 @@ For the third Phase 2 experiment, we evaluated domain-specific bioinformatics re
 
 \subsection{Tool Usage Patterns}
 
-Analysis of tool calls revealed interesting patterns:
-
-\begin{itemize}
-    \item \textbf{V4/V5 used more Bash commands} (70-80 per run) than V6 (40-50), primarily for running mutmut
-    \item \textbf{V6 used fewer Read calls}, suggesting it wrote tests more directly rather than extensively analyzing
-    \item \textbf{All variants used TodoWrite} similarly, indicating task management was prompt-agnostic
-\end{itemize}
+Analysis of tool calls revealed interesting patterns. V4 and V5 used more Bash commands (70--80 per run) than V6 (40--50), primarily for running mutmut. V6 used fewer Read calls, suggesting it wrote tests more directly rather than extensively analyzing the codebase. Interestingly, all variants used TodoWrite similarly, indicating task management was prompt-agnostic.
 
 \subsection{Statistical Pattern Analysis}
 

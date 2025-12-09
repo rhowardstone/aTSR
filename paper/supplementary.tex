@@ -321,15 +321,7 @@ Msg 120: "Let me fix the LazyFile test issue:"
 
 \subsection{V4 Catastrophic Failures Across All Repositories}
 
-In 5 of 9 repositories, V4 (+Mutations) achieved $\leq$10\% final coverage. This is not occasional underperformance---it is systematic failure:
-
-\begin{itemize}
-\item \textbf{click}: 0\% coverage. Mutation testing never completed; agent trapped in setup.
-\item \textbf{python-box}: 1\% coverage. mutmut encountered errors on python-box's complex nested dictionary types.
-\item \textbf{dnaapler}: 0\% coverage. Bioinformatics domain concepts confused the mutation analysis.
-\item \textbf{fastqe}: 0\% coverage. Emoji handling in test assertions created mutation chaos.
-\item \textbf{pyfaidx}: 0\% coverage. FASTA file format parsing generated hundreds of trivial mutants.
-\end{itemize}
+In 5 of 9 repositories, V4 (+Mutations) achieved $\leq$10\% final coverage. This is not occasional underperformance---it is systematic failure. On click, V4 achieved 0\% coverage because mutation testing never completed and the agent became trapped in setup. On python-box, V4 achieved only 1\% coverage when mutmut encountered errors on python-box's complex nested dictionary types. The bioinformatics repositories fared even worse: dnaapler achieved 0\% coverage because bioinformatics domain concepts confused the mutation analysis, fastqe achieved 0\% coverage because emoji handling in test assertions created mutation chaos, and pyfaidx achieved 0\% coverage because FASTA file format parsing generated hundreds of trivial mutants.
 
 \textbf{Common Pattern}: In all cases, the agent entered mutation analysis loops: it would generate mutants, attempt to understand each surviving mutant, and exhaust its context window before writing any actual coverage tests. The prompt's instruction to ``use mutation testing'' overrode the implicit priority of ``write useful tests.''
 
