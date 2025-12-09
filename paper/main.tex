@@ -133,19 +133,19 @@ Our exploratory study (n=1 per configuration) yielded statistically-supported fi
 \small
 \caption{Summary of Statistical Findings}
 \label{tab:stats-summary}
-\begin{tabular}{lrrp{4cm}}
+\begin{tabular}{lrrp{2.8cm}}
 \toprule
-\textbf{Finding} & \textbf{Statistic} & \textbf{p-value} & \textbf{Interpretation} \\
+\textbf{Finding} & \textbf{Stat} & \textbf{p} & \textbf{Interpretation} \\
 \midrule
-V4 $<$ V1 coverage & 9/9 repos & 0.002 & Mutation testing \textit{may hurt}$^*$ \\
-Repo variance & 25.5$\times$ & --- & Repo $>>$ prompt effect \\
-V6 token efficiency & 2/6 repos & 0.89 & \textit{Not} significant \\
-Bio vs general & 60\% vs 83\% & 0.19 & \textit{Not} significant \\
+V4 $<$ V1 cov. & 9/9 & 0.002 & Mutations hurt$^*$ \\
+Repo variance & 25.5$\times$ & --- & Repo $>>$ prompt \\
+V6 tokens & 2/6 & 0.89 & Not significant \\
+Bio vs general & 60/83\% & 0.19 & Not significant \\
 \bottomrule
 \end{tabular}
 
 \vspace{1mm}
-\noindent{\footnotesize $^*$Requires replication; pattern is statistically robust but effect magnitude may vary.}
+\noindent{\footnotesize $^*$Requires replication; pattern robust but magnitude may vary.}
 \end{table}
 
 \vspace{1em}
@@ -188,7 +188,7 @@ testScout uses Set-of-Marks (SoM)~\cite{set-of-marks} for reliable element targe
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.6\columnwidth]{figures/testscout-som.png}
+\includegraphics[width=\columnwidth]{figures/testscout-som.png}
 \caption{testScout's Set-of-Marks overlay on the JobsCoach login page. Red numbered boxes identify interactive elements (1: Forgot password, 2: Sign In button, 3: Sign up link, 4-6: form fields). The vision model receives this marked screenshot and returns element IDs rather than fragile CSS selectors.}
 \label{fig:testscout}
 \end{figure}
@@ -270,7 +270,7 @@ click & Opus & refine & 66\% & 95.5 & 3.3M \\
 \end{tabular}
 
 \vspace{1mm}
-\noindent{\footnotesize $^*$Extended exploration cycles due to integrating with 190 existing baseline tests.}
+\noindent{\footnotesize $^*$Anomaly: click repository had 190 pre-existing tests; Opus spent extra tokens analyzing these before writing new tests.}
 \end{table}
 
 Observations from Phase 1 trials:

@@ -3,6 +3,10 @@
 \setcopyright{none}
 \acmConference[CSE 5095]{AI for Software Engineering}{Fall 2025}{University of Connecticut}
 
+% Rename tables and figures to S1, S2, etc. to avoid overlap with main paper
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+
 \begin{document}
 
 \title{Supplementary Materials: Agentic Test Suite Refinement}
@@ -195,63 +199,18 @@ pyfaidx & V6 & 52 & 46 & 14 & 4.5 \\
 
 \section{Appendix C: Statistical Analysis Code}
 
-This appendix provides the complete Python code used for statistical analysis. All tests are reproducible using standard scipy functions. We chose non-parametric tests (sign test, Mann-Whitney U) because our sample sizes are small and we cannot assume normal distributions.
+This appendix describes the statistical tests used in our analysis. All tests are reproducible using standard scipy functions. We chose non-parametric tests (sign test, Mann-Whitney U) because our sample sizes are small and we cannot assume normal distributions.
 
-\begin{verbatim}
-import numpy as np
-from scipy.stats import binomtest, wilcoxon, mannwhitneyu
+The complete Python analysis script is available at:\\
+\url{https://github.com/rhowardstone/aTSR/blob/main/src/stat_tests.py}
 
-# ============================================================
-# TEST 1: Sign test for V4 underperforming V1
-# ============================================================
-# For each repository, we compare V4 coverage to V1 coverage.
-# V4 was worse than V1 in all 9 repositories.
-# Under the null hypothesis (no difference), each repo has 50%
-# chance of V4 being worse. The probability of 9/9 by chance:
+\textbf{Test 1: Sign test for V4 underperforming V1.} For each of 9 repositories, we compared V4 coverage to V1 coverage. V4 was worse in all 9 cases. Under the null hypothesis (no difference), each repo has 50\% chance of V4 being worse. Using \texttt{scipy.stats.binomtest(9, 9, p=0.5)}, we obtain p=0.002.
 
-v4_worse = 9  # V4 < V1 in all 9 repos
-result = binomtest(v4_worse, 9, p=0.5, alternative='greater')
-print(f"Sign test (V4 < V1): p = {result.pvalue:.4f}")
-# Output: p = 0.0020
+\textbf{Test 2: Variance decomposition.} We computed between-group variance for repositories (132.0) and for prompt variants (5.2), yielding a ratio of 25.5$\times$. Repository characteristics explain 87\% of total variance; prompt strategy explains 3\%.
 
-# ============================================================
-# TEST 2: Variance decomposition (repo vs prompt effects)
-# ============================================================
-# We compute between-group variance for repositories and for
-# prompt variants, then take their ratio.
+\textbf{Test 3: Token efficiency (V5 vs V6).} We hypothesized V6 (Minimal) would use fewer tokens than V5 (+Both). Testing on 6 general-purpose repos, V6 used fewer tokens in only 2/6 cases. Sign test yields p=0.89---not significant.
 
-total_var = 151.7      # Total variance in coverage outcomes
-between_repo_var = 132.0    # Variance explained by repo
-between_variant_var = 5.2   # Variance explained by prompt
-print(f"Ratio: {between_repo_var/between_variant_var:.1f}x")
-# Output: 25.5x (repos explain 25.5x more variance than prompts)
-
-# ============================================================
-# TEST 3: Token efficiency comparison (V5 vs V6)
-# ============================================================
-# We hypothesized V6 (Minimal) would use fewer tokens than
-# V5 (+Both). Testing on 6 general-purpose repos:
-
-v5_tokens = [5.15, 4.89, 4.25, 3.27, 5.83, 7.62]  # Million tokens
-v6_tokens = [5.86, 4.92, 0.94, 3.72, 7.32, 7.38]  # Million tokens
-v6_wins = sum(v6 < v5 for v6, v5 in zip(v6_tokens, v5_tokens))
-# V6 used fewer tokens in only 2/6 repos
-
-result = binomtest(v6_wins, 6, p=0.5, alternative='greater')
-print(f"Sign test: p = {result.pvalue:.4f}")
-# Output: p = 0.8906 (NOT significant - no evidence V6 is cheaper)
-
-# ============================================================
-# TEST 4: Domain effects (bioinformatics vs general)
-# ============================================================
-# Comparing V1 coverage between bio repos and general repos:
-
-general = [79, 85, 97, 93, 77, 67]  # V1 coverage for 6 general repos
-bio = [35, 95, 50]                   # V1 coverage for 3 bio repos
-u_stat, u_p = mannwhitneyu(bio, general, alternative='less')
-print(f"Mann-Whitney U: p = {u_p:.4f}")
-# Output: p = 0.1905 (NOT significant, but low sample size)
-\end{verbatim}
+\textbf{Test 4: Domain effects.} Comparing V1 coverage between bioinformatics repos (mean 60\%) and general repos (mean 83\%) using Mann-Whitney U test yields p=0.19---not significant, likely due to small sample size (n=3 bio repos).
 
 \section{Appendix D: testScout Evaluation Results}
 
